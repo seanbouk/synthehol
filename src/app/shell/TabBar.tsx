@@ -18,18 +18,18 @@ export function TabBar() {
 
   return (
     <nav className="tabbar">
-      <button className={tabClass('home')} onClick={() => setActive('home')}>Home</button>
-      <button className={tabClass('drums')} onClick={() => setActive('drums')}>Drums</button>
-      <button className={tabClass('bass')} onClick={() => setActive('bass')}>Bass</button>
+      <button className={tabClass('home')} onClick={() => setActive('home')}>🏠 Home</button>
+      <button className={tabClass('drums')} onClick={() => setActive('drums')}>🥁 Drums</button>
+      <button className={tabClass('bass')} onClick={() => setActive('bass')}>🎸 Bass</button>
       {devices.map((d) => {
         const tab: TabId = { kind: 'device', deviceId: d.id };
         return (
           <button key={d.id} className={tabClass(tab)} onClick={() => setActive(tab)}>
-            {d.name}
+            🎮 {d.name}
           </button>
         );
       })}
-      <button className={tabClass('output')} onClick={() => setActive('output')}>Output</button>
+      <button className={tabClass('output')} onClick={() => setActive('output')}>🎛️ Output</button>
     </nav>
   );
 }
