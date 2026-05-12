@@ -52,11 +52,27 @@ lfo_depth   = hslider("lfo_depth",      0,   0, 1, 0.01);
 lfo_dest    = hslider("lfo_dest",       1, 0, 3, 1);
 
 
+// ─── Parameter smoothing ────────────────────────────────────────────
+// 20 ms one-pole low-pass kills zipper / click artifacts when params
+// move during a held note (cutoff sweeps, shape tweaks, drive crank).
+
+smoo20 = si.smooth(ba.tau2pole(0.02));
+
+shape_s     = shape     : smoo20;
+osc_mix_s   = osc_mix   : smoo20;
+osc2_detune_s = osc2_detune : smoo20;
+drive_s     = drive     : smoo20;
+cutoff_s    = cutoff    : smoo20;
+resonance_s = resonance : smoo20;
+filter_env_amount_s = filter_env_amount : smoo20;
+lfo_depth_s = lfo_depth : smoo20;
+
+
 // ─── Modulation primitives ──────────────────────────────────────────
 
 env = en.adsr(attack, decay, sustain, release, gate);
 
-free_lfo = os.osc(lfo_rate) * lfo_depth;
+free_lfo = os.osc(lfo_rate) * lfo_depth_s;
 
 // Vibrato driven by mod wheel: fixed 5 Hz rate, up to ±50 cents depth.
 vibrato_cents  = os.osc(5.0) * modwheel * 50.0;
@@ -70,7 +86,7 @@ lfo_cutoff_oct   = free_lfo * (lfo_dest == 1) * 4.0;
 lfo_amp_factor   = 1.0 + free_lfo * (lfo_dest == 2) * 0.5;
 lfo_shape_mod    = free_lfo * (lfo_dest == 3) * 0.5;
 
-mod_shape = max(0.0, min(1.0, shape + lfo_shape_mod));
+mod_shape = max(0.0, min(1.0, shape_s + lfo_shape_mod));
 
 
 // ─── Pitch ──────────────────────────────────────────────────────────
@@ -79,7 +95,7 @@ bend_factor = pow(2.0, bend / 12.0);
 base_freq   = freq * bend_factor * vibrato_factor * lfo_pitch_factor;
 
 f1 = base_freq;
-f2 = base_freq * pow(2.0, osc2_octave) * pow(2.0, osc2_detune / 1200.0);
+f2 = base_freq * pow(2.0, osc2_octave) * pow(2.0, osc2_detune_s / 1200.0);
 
 
 // ─── Shape-aware voice helpers ──────────────────────────────────────
@@ -127,28 +143,28 @@ osc2 = ba.selectn(4, int(osc2_wave),
 // ─── Mix / ring (sync is a no-op for M4) ────────────────────────────
 
 ring_signal = osc1 * osc2;
-mixed       = osc1 * (1.0 - osc_mix) + osc2 * osc_mix;
+mixed       = osc1 * (1.0 - osc_mix_s) + osc2 * osc_mix_s;
 combined    = mixed * (1.0 - ring_on) + ring_signal * ring_on;
 
 
 // ─── Drive (waveshaper) ─────────────────────────────────────────────
 
 // Both modes are dry-blended with `drive` so 0 = clean.
-soft_drive(x) = x * (1.0 - drive)
-              + ma.tanh(x * (1.0 + drive * 4.0)) * drive;
+soft_drive(x) = x * (1.0 - drive_s)
+              + ma.tanh(x * (1.0 + drive_s * 4.0)) * drive_s;
 
-fold_drive(x) = x * (1.0 - drive)
-              + sin(x * (1.0 + drive * 6.0) * ma.PI * 0.5) * drive;
+fold_drive(x) = x * (1.0 - drive_s)
+              + sin(x * (1.0 + drive_s * 6.0) * ma.PI * 0.5) * drive_s;
 
 driven = select2(drive_type < 0.5, fold_drive(combined), soft_drive(combined));
 
 
 // ─── Filter ────────────────────────────────────────────────────────
 
-q = 0.5 + resonance * 19.5;
+q = 0.5 + resonance_s * 19.5;
 
-mod_cutoff_oct  = env * filter_env_amount * 4.0 + lfo_cutoff_oct;
-modulated_cutoff = max(20.0, min(20000.0, cutoff * pow(2.0, mod_cutoff_oct)));
+mod_cutoff_oct  = env * filter_env_amount_s * 4.0 + lfo_cutoff_oct;
+modulated_cutoff = max(20.0, min(20000.0, cutoff_s * pow(2.0, mod_cutoff_oct)));
 
 filt_lp    = fi.resonlp(modulated_cutoff, q, 1.0, driven);
 filt_hp    = fi.resonhp(modulated_cutoff, q, 1.0, driven);

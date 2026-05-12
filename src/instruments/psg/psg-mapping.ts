@@ -39,11 +39,11 @@ export function mapSlotToPSG(
       case 1: return { name: 'shape',     value: t };
       case 2: return { name: 'cutoff',    value: logScale(t, 20, 20000) };
       case 3: return { name: 'resonance', value: t * 0.99 };
-      case 4: return { name: 'attack',    value: logScale(t, 0.001, 5) };
-      case 5: return { name: 'decay',     value: logScale(t, 0.001, 5) };
-      case 6: return { name: 'sustain',   value: t };
-      case 7: return { name: 'release',   value: logScale(t, 0.001, 5) };
-      case 8: return { name: 'drive',     value: t };
+      case 4: return { name: 'drive',     value: t };
+      case 5: return { name: 'attack',    value: logScale(t, 0.001, 5) };
+      case 6: return { name: 'decay',     value: logScale(t, 0.001, 5) };
+      case 7: return { name: 'sustain',   value: t };
+      case 8: return { name: 'release',   value: logScale(t, 0.001, 5) };
     }
     return null;
   }
@@ -59,14 +59,13 @@ export function mapSlotToPSG(
   }
 
   if (slot.kind === 'encoder') {
-    // Most rotary encoders in relative mode send:
-    //   1..63   = CW (positive delta)
-    //   65..127 = CCW (negative delta, 128 - value)
-    // Absolute encoders (sending 0..127 linearly) won't behave well here
-    // — user can switch encoder mode in their device's settings.
+    // Minilab 3 encoder convention (and most Arturia gear):
+    //   65..127 = CW  → delta = value - 64  (65→+1, 66→+2, ...)
+    //    0..62  = CCW → delta = value - 63  (62→−1, 61→−2, ...)
+    //   63, 64  = dead zone
     let delta = 0;
-    if (value >= 1 && value <= 63) delta = value;
-    else if (value >= 65 && value <= 127) delta = value - 128;
+    if (value >= 65 && value <= 127) delta = value - 64;
+    else if (value <= 62) delta = value - 63;
     if (delta === 0) return null;
 
     const current = Math.round(currentOsc1Wave);

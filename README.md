@@ -183,11 +183,11 @@ Reference mapping for the Arturia Minilab 3 (primary development device). Other 
 | Knob 1         | 86   | Shape (both oscillators)                      |
 | Knob 2         | 87   | Filter cutoff                                 |
 | Knob 3         | 89   | Filter resonance                              |
-| Knob 4         | 90   | Envelope attack                               |
-| Knob 5         | 110  | Envelope decay                                |
-| Knob 6         | 111  | Envelope sustain                              |
-| Knob 7         | 116  | Envelope release                              |
-| Knob 8         | 117  | Drive amount                                  |
+| Knob 4         | 90   | Drive amount                                  |
+| Knob 5         | 110  | Envelope attack                               |
+| Knob 6         | 111  | Envelope decay                                |
+| Knob 7         | 116  | Envelope sustain                              |
+| Knob 8         | 117  | Envelope release                              |
 | Slider 1       | 15   | OSC mix (OSC1 ↔ OSC2 balance)                 |
 | Slider 2       | 30   | OSC2 detune (±50 cents fine)                  |
 | Slider 3       | 31   | LFO rate                                      |

@@ -2,12 +2,10 @@ import { useCallback } from 'react';
 import { Knob } from '../../ui-kit/Knob';
 import { Slider } from '../../ui-kit/Slider';
 import { ButtonGroup } from '../../ui-kit/ButtonGroup';
-import { engineRegistry } from '../../audio/engine-registry';
 import { usePSGParams, usePSGStore } from './psg-state';
 import type { PSGParams } from './psg-defaults';
-import { Oscilloscope } from './Oscilloscope';
+import { WaveformPreview } from './WaveformPreview';
 import { ADSRCurve } from './ADSRCurve';
-import type { PSGEngine } from '../../audio/psg-engine';
 
 const WAVE_OPTIONS = [
   { value: 0, label: 'Pulse' },
@@ -63,9 +61,6 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
     },
     [deviceId, setParam]
   );
-
-  // Engine reference for the oscilloscope's AnalyserNode.
-  const engine = engineRegistry.get(deviceId) as PSGEngine | undefined;
 
   return (
     <div className="psg-panel">
@@ -134,6 +129,32 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
       </section>
 
       <section className="psg-section">
+        <h3>LFO</h3>
+        <div className="psg-row">
+          <Slider
+            label="Rate"
+            value={params.lfo_rate}
+            min={0.1} max={20} step={0.05}
+            onChange={(v) => set('lfo_rate', v)}
+            format={(v) => `${v.toFixed(2)} Hz`}
+          />
+          <Slider
+            label="Depth"
+            value={params.lfo_depth}
+            min={0} max={1} step={0.01}
+            onChange={(v) => set('lfo_depth', v)}
+            format={(v) => v.toFixed(2)}
+          />
+          <ButtonGroup
+            label="Destination"
+            value={params.lfo_dest}
+            options={LFO_DEST_OPTIONS}
+            onChange={(v) => set('lfo_dest', v)}
+          />
+        </div>
+      </section>
+
+      <section className="psg-section">
         <h3>Drive</h3>
         <div className="psg-row">
           <Knob
@@ -188,6 +209,22 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
       </section>
 
       <section className="psg-section">
+        <h3>Voice</h3>
+        <p className="muted" style={{ fontSize: 11, marginTop: 0, marginBottom: 8 }}>
+          One representative cycle of OSC 1 mixed with OSC 2 (or ring-modded). Pre-drive, pre-filter.
+        </p>
+        <WaveformPreview
+          osc1_wave={params.osc1_wave}
+          osc2_wave={params.osc2_wave}
+          shape={params.shape}
+          osc_mix={params.osc_mix}
+          osc2_octave={params.osc2_octave}
+          osc2_detune={params.osc2_detune}
+          ring_on={params.ring_on}
+        />
+      </section>
+
+      <section className="psg-section">
         <h3>Envelope</h3>
         <div className="psg-row">
           <Knob
@@ -227,36 +264,6 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
         />
       </section>
 
-      <section className="psg-section">
-        <h3>LFO</h3>
-        <div className="psg-row">
-          <Slider
-            label="Rate"
-            value={params.lfo_rate}
-            min={0.1} max={20} step={0.05}
-            onChange={(v) => set('lfo_rate', v)}
-            format={(v) => `${v.toFixed(2)} Hz`}
-          />
-          <Slider
-            label="Depth"
-            value={params.lfo_depth}
-            min={0} max={1} step={0.01}
-            onChange={(v) => set('lfo_depth', v)}
-            format={(v) => v.toFixed(2)}
-          />
-          <ButtonGroup
-            label="Destination"
-            value={params.lfo_dest}
-            options={LFO_DEST_OPTIONS}
-            onChange={(v) => set('lfo_dest', v)}
-          />
-        </div>
-      </section>
-
-      <section className="psg-section">
-        <h3>Output</h3>
-        {engine && <Oscilloscope analyser={engine.analyser} />}
-      </section>
     </div>
   );
 }
