@@ -5,24 +5,40 @@ import { Dispatcher } from '../midi/dispatcher';
 import { decode } from '../midi/decode';
 import { profileFor } from '../midi/device-profile';
 import { classifyPort } from '../midi/port-filter';
+import { getAudioContext } from '../audio/context';
+import { SineEngine } from '../audio/sine-engine';
+import { engineRegistry } from '../audio/engine-registry';
+import { dispatchToEngine } from '../audio/dispatch-to-engine';
 import { TabContainer } from './shell/TabContainer';
 
 /**
- * One dispatcher per MIDIInput. Sustain state is per-channel within a
- * single device, so dispatchers don't span devices.
- *
- * Lives at module scope rather than in React state because:
- *  - dispatchers hold imperative state (sustain maps) that React shouldn't own
- *  - they survive component remounts (StrictMode double-renders, route changes)
- *  - the audio path will subscribe to them directly in M2
+ * Module-scoped runtime state — survives React remounts and HMR.
+ * - dispatchers: one per MIDIInput; holds sustain pedal state per channel
+ * - enginePromises: idempotency guard for the async engine creation
  */
 const dispatchers = new Map<string, Dispatcher>();
+const enginePromises = new Map<string, Promise<void>>();
+
+async function setupEngineFor(
+  deviceId: string,
+  ctx: AudioContext,
+  dispatcher: Dispatcher,
+  profile: ReturnType<typeof profileFor>
+): Promise<void> {
+  if (engineRegistry.has(deviceId)) return;
+  const engine = await SineEngine.create(ctx);
+  // Device may have disconnected during the async setup.
+  if (!midiManager.inputs.some((i) => i.id === deviceId)) {
+    engine.destroy();
+    return;
+  }
+  engine.output.connect(ctx.destination);
+  engineRegistry.set(deviceId, engine);
+  dispatcher.subscribe((msg) => dispatchToEngine(msg, engine, profile));
+}
 
 function syncDevices(): void {
   const store = useAppStore.getState();
-  // Hide ports that exist for DAW control, vendor-specific software bridges,
-  // or DIN passthrough — see midi/port-filter.ts. Logged on every sync so
-  // a silently-dropped musical port is visible in devtools.
   const allInputs = midiManager.inputs;
   console.groupCollapsed(`[midi] port sync — ${allInputs.length} port(s)`);
   const inputs = allInputs.filter((i) => {
@@ -46,38 +62,48 @@ function syncDevices(): void {
     }))
   );
 
-  // Wire dispatchers for newly seen inputs.
+  // Wire dispatchers and engines for newly seen inputs.
+  const ctx = getAudioContext();
   const seen = new Set<string>();
   for (const input of inputs) {
     seen.add(input.id);
     if (!dispatchers.has(input.id)) {
       const d = new Dispatcher();
-      const profile = profileFor(input);
-      d.subscribe((msg) => {
-        // M1: log only. M2 will route to the instrument bound to this device's tab.
-        // Including the resolved slot when this is a CC, to verify the mapping layer.
-        if (msg.type === 'cc' && profile) {
-          const slot = profile.ccToSlot[msg.data1];
-          console.log(`[${input.name}] cc ${msg.data1}=${msg.data2}`, slot ? `→ ${JSON.stringify(slot)}` : '(unmapped)');
-        } else {
-          console.log(`[${input.name}]`, msg);
-        }
-      });
       input.onmidimessage = (e) => {
         if (e.data) d.ingest(decode(e.data));
       };
       dispatchers.set(input.id, d);
     }
+    // Engine setup needs an AudioContext (created on the user's first
+    // click in HomeTab). If it doesn't exist yet, this is a no-op; the
+    // next sync after audio is initialised will pick the device up.
+    if (ctx && !enginePromises.has(input.id)) {
+      const dispatcher = dispatchers.get(input.id)!;
+      const profile = profileFor(input);
+      enginePromises.set(input.id, setupEngineFor(input.id, ctx, dispatcher, profile));
+    }
   }
 
-  // Drop dispatchers for removed inputs.
+  // Tear down dispatchers and engines for removed inputs.
   for (const id of [...dispatchers.keys()]) {
-    if (!seen.has(id)) dispatchers.delete(id);
+    if (!seen.has(id)) {
+      dispatchers.delete(id);
+      engineRegistry.remove(id);
+      enginePromises.delete(id);
+    }
   }
+}
+
+/**
+ * Called after AudioContext is created (from HomeTab's request button).
+ * Retroactively sets up engines for devices that were detected before
+ * audio was ready.
+ */
+export function ensureEnginesForExistingDevices(): void {
+  syncDevices();
 }
 
 export function App() {
   useEffect(() => midiManager.subscribe(syncDevices), []);
-
   return <TabContainer />;
 }

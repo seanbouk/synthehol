@@ -37,6 +37,13 @@ button {
 
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 
+button.secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+button.secondary:hover { border-color: var(--muted); }
+
 .app {
   display: flex;
   flex-direction: column;
