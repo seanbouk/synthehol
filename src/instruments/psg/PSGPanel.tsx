@@ -147,42 +147,6 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
 
       <section className="psg-section">
         <div className="psg-section-header">
-          <h3>LFO</h3>
-          <ButtonGroup
-            value={params.lfo_on}
-            options={ON_OFF_OPTIONS}
-            onChange={(v) => set('lfo_on', v)}
-          />
-        </div>
-        <div className="psg-row">
-          <Slider
-            label="Rate"
-            value={params.lfo_rate}
-            min={0.1} max={20} step={0.05}
-            disabled={!params.lfo_on}
-            onChange={(v) => set('lfo_rate', v)}
-            format={(v) => `${v.toFixed(2)} Hz`}
-          />
-          <Slider
-            label="Depth"
-            value={params.lfo_depth}
-            min={0} max={1} step={0.01}
-            disabled={!params.lfo_on}
-            onChange={(v) => set('lfo_depth', v)}
-            format={(v) => v.toFixed(2)}
-          />
-          <ButtonGroup
-            label="Destination"
-            value={params.lfo_dest}
-            options={LFO_DEST_OPTIONS}
-            disabled={!params.lfo_on}
-            onChange={(v) => set('lfo_dest', v)}
-          />
-        </div>
-      </section>
-
-      <section className="psg-section">
-        <div className="psg-section-header">
           <h3>Drive</h3>
           <ButtonGroup
             value={params.drive_on}
@@ -205,52 +169,6 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             options={DRIVE_OPTIONS}
             disabled={!params.drive_on}
             onChange={(v) => set('drive_type', v)}
-          />
-        </div>
-      </section>
-
-      <section className="psg-section">
-        <div className="psg-section-header">
-          <h3>Filter</h3>
-          <ButtonGroup
-            value={params.filter_on}
-            options={ON_OFF_OPTIONS}
-            onChange={(v) => set('filter_on', v)}
-          />
-        </div>
-        <div className="psg-row">
-          <Knob
-            label="Cutoff"
-            value={params.cutoff}
-            min={20} max={20000} log
-            disabled={!params.filter_on}
-            onChange={(v) => set('cutoff', v)}
-            format={fmtHz}
-          />
-          <Knob
-            label="Resonance"
-            value={params.resonance}
-            min={0} max={0.99}
-            disabled={!params.filter_on}
-            onChange={(v) => set('resonance', v)}
-            format={(v) => v.toFixed(2)}
-          />
-          <Knob
-            label="Env amount"
-            value={params.filter_env_amount}
-            min={-1} max={1}
-            disabled={!params.filter_on}
-            onChange={(v) => set('filter_env_amount', v)}
-            format={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}`}
-          />
-        </div>
-        <div className="psg-row">
-          <ButtonGroup
-            label="Mode"
-            value={params.filter_mode}
-            options={FILTER_OPTIONS}
-            disabled={!params.filter_on}
-            onChange={(v) => set('filter_mode', v)}
           />
         </div>
       </section>
@@ -313,6 +231,88 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
           sustain={params.sustain}
           release={params.release}
         />
+      </section>
+
+      <section className="psg-section">
+        <div className="psg-section-header">
+          <h3>Filter</h3>
+          <ButtonGroup
+            value={params.filter_on}
+            options={ON_OFF_OPTIONS}
+            onChange={(v) => set('filter_on', v)}
+          />
+        </div>
+        <div className="psg-row">
+          <Knob
+            label="Cutoff"
+            value={params.cutoff}
+            min={20} max={20000} log
+            disabled={!params.filter_on}
+            onChange={(v) => set('cutoff', v)}
+            format={fmtHz}
+          />
+          <Knob
+            label="Resonance"
+            value={params.resonance}
+            min={0} max={0.99}
+            disabled={!params.filter_on}
+            onChange={(v) => set('resonance', v)}
+            format={(v) => v.toFixed(2)}
+          />
+          <Knob
+            label="Env amount"
+            value={params.filter_env_amount}
+            min={-1} max={1}
+            disabled={!params.filter_on}
+            onChange={(v) => set('filter_env_amount', v)}
+            format={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}`}
+          />
+        </div>
+        <div className="psg-row">
+          <ButtonGroup
+            label="Mode"
+            value={params.filter_mode}
+            options={FILTER_OPTIONS}
+            disabled={!params.filter_on}
+            onChange={(v) => set('filter_mode', v)}
+          />
+        </div>
+      </section>
+
+      <section className="psg-section">
+        <div className="psg-section-header">
+          <h3>LFO</h3>
+          <ButtonGroup
+            value={params.lfo_on}
+            options={ON_OFF_OPTIONS}
+            onChange={(v) => set('lfo_on', v)}
+          />
+        </div>
+        <div className="psg-row">
+          <Slider
+            label="Rate"
+            value={params.lfo_rate}
+            min={0.1} max={20} step={0.05}
+            disabled={!params.lfo_on}
+            onChange={(v) => set('lfo_rate', v)}
+            format={(v) => `${v.toFixed(2)} Hz`}
+          />
+          <Slider
+            label="Depth"
+            value={params.lfo_depth}
+            min={0} max={1} step={0.01}
+            disabled={!params.lfo_on}
+            onChange={(v) => set('lfo_depth', v)}
+            format={(v) => v.toFixed(2)}
+          />
+          <ButtonGroup
+            label="Destination"
+            value={params.lfo_dest}
+            options={LFO_DEST_OPTIONS}
+            disabled={!params.lfo_on}
+            onChange={(v) => set('lfo_dest', v)}
+          />
+        </div>
       </section>
 
     </div>
