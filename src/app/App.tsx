@@ -77,11 +77,7 @@ function syncDevices(): void {
 }
 
 export function App() {
-  useEffect(() => {
-    const unsubscribe = midiManager.subscribe(syncDevices);
-    if (midiManager.ready) syncDevices();
-    return unsubscribe;
-  }, []);
+  useEffect(() => midiManager.subscribe(syncDevices), []);
 
   return <TabContainer />;
 }

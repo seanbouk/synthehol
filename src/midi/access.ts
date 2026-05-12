@@ -1,16 +1,22 @@
 /**
  * Singleton wrapper around the browser's MIDIAccess.
  * Holds the access object once granted; emits change notifications when
- * devices connect/disconnect so the app can re-render.
+ * the set of inputs changes.
+ *
+ * Notifications are deduped by a signature of the input list — Chrome
+ * tends to fire `statechange` events redundantly right after access is
+ * granted, so without deduping the React layer would re-sync 2+ times
+ * for one real change.
  */
 class MIDIManager {
   private access: MIDIAccess | null = null;
   private listeners = new Set<() => void>();
+  private lastSignature = '';
 
   async request(): Promise<void> {
     this.access = await navigator.requestMIDIAccess({ sysex: false });
-    this.access.addEventListener('statechange', () => this.notify());
-    this.notify();
+    this.access.addEventListener('statechange', () => this.maybeNotify());
+    this.maybeNotify();
   }
 
   get inputs(): MIDIInput[] {
@@ -34,7 +40,16 @@ class MIDIManager {
     };
   }
 
-  private notify(): void {
+  private currentSignature(): string {
+    return this.inputs
+      .map((i) => `${i.id}|${i.name ?? ''}|${i.state}|${i.connection}`)
+      .join(';');
+  }
+
+  private maybeNotify(): void {
+    const sig = this.currentSignature();
+    if (sig === this.lastSignature) return;
+    this.lastSignature = sig;
     this.listeners.forEach((fn) => fn());
   }
 }
