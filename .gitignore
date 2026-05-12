@@ -21,6 +21,7 @@ dist
 dist-ssr
 build
 *.local
+*.tsbuildinfo
 
 # Vite
 .vite
