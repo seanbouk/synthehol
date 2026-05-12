@@ -4,14 +4,18 @@ import type { AbstractSlot } from '../types/midi';
 import { getFaustCompiler } from './faust-runtime';
 
 /**
- * PSG instrument — M3 phase 1.
+ * PSG instrument — M4.
  *
  * Hosts a Faust-compiled AudioWorkletNode (see public/dsp/psg.dsp).
- * Translates Engine method calls into setParamValue calls on the node.
  *
- * Parameter paths are resolved by name suffix on construction so the
- * engine is robust to whatever prefix Faust generates (with or without
- * `declare name`, with or without vgroup wrappers).
+ * Parameter paths are resolved lazily by name suffix the first time
+ * each is needed, so the engine is robust to whatever prefix Faust
+ * generates (with or without vgroups, with or without `declare name`).
+ *
+ * M4 wires up pitch bend + mod-wheel vibrato from the dispatcher
+ * because those flow direct from MIDI and don't need UI. Knob/slider
+ * routing through `slot()` lands in M5; for now `setParam(name, value)`
+ * is exposed so the dev console / future UI can drive every DSP param.
  */
 
 const PSG_DSP_URL = import.meta.env.BASE_URL + 'dsp/psg.dsp';
@@ -32,39 +36,20 @@ async function ensurePSGGenerator(): Promise<FaustMonoDspGenerator> {
   return generatorPromise;
 }
 
-function findParamPath(paths: string[], suffix: string): string {
-  const match = paths.find((p) => p === '/' + suffix || p.endsWith('/' + suffix));
-  if (!match) throw new Error(`PSG: param "${suffix}" not exposed by the .dsp`);
-  return match;
-}
-
 export class PSGEngine implements Engine {
   private node: FaustMonoAudioWorkletNode;
   private gain: GainNode;
   private currentNote: number | null = null;
-  private freqPath: string;
-  private gainPath: string;
-  private gatePath: string;
-  // waveformPath kept for future use when the encoder gets wired
-  private waveformPath: string;
+  private allParamPaths: string[];
+  private pathCache = new Map<string, string>();
   readonly output: AudioNode;
 
   private constructor(node: FaustMonoAudioWorkletNode, gain: GainNode) {
     this.node = node;
     this.gain = gain;
     this.output = gain;
-
-    const params = node.getParams();
-    this.freqPath = findParamPath(params, 'freq');
-    this.gainPath = findParamPath(params, 'gain');
-    this.gatePath = findParamPath(params, 'gate');
-    this.waveformPath = findParamPath(params, 'waveform');
-    console.log('[PSG] params resolved:', {
-      freq: this.freqPath,
-      gain: this.gainPath,
-      gate: this.gatePath,
-      waveform: this.waveformPath
-    });
+    this.allParamPaths = node.getParams();
+    console.log('[PSG] available params:', this.allParamPaths);
   }
 
   static async create(ctx: AudioContext): Promise<PSGEngine> {
@@ -77,36 +62,59 @@ export class PSGEngine implements Engine {
     return new PSGEngine(node, gain);
   }
 
+  /**
+   * Set a DSP param by short name (the slider/button label in the .dsp).
+   * Resolves to the full Faust path on first call and caches.
+   * Public so devtools and the M5 UI can drive every param.
+   */
+  setParam(name: string, value: number): void {
+    let path = this.pathCache.get(name);
+    if (!path) {
+      const match = this.allParamPaths.find(
+        (p) => p === '/' + name || p.endsWith('/' + name)
+      );
+      if (!match) {
+        console.warn(`[PSG] setParam: unknown param "${name}"`);
+        return;
+      }
+      path = match;
+      this.pathCache.set(name, path);
+    }
+    this.node.setParamValue(path, value);
+  }
+
   noteOn(_channel: number, note: number, velocity: number): void {
     this.currentNote = note;
     const freq = 440 * Math.pow(2, (note - 69) / 12);
-    this.node.setParamValue(this.freqPath, freq);
-    this.node.setParamValue(this.gainPath, velocity / 127);
-    this.node.setParamValue(this.gatePath, 1);
+    this.setParam('freq', freq);
+    this.setParam('gain', velocity / 127);
+    this.setParam('gate', 1);
   }
 
   noteOff(_channel: number, note: number): void {
     if (this.currentNote === note) {
       this.currentNote = null;
-      this.node.setParamValue(this.gatePath, 0);
+      this.setParam('gate', 0);
     }
   }
 
-  pitchBend(_channel: number, _value: number): void {
-    // M3 phase 1: not implemented. M4 adds pitch bend handling.
+  pitchBend(_channel: number, value: number): void {
+    // value is -8192..+8191 → ±2 semitones (standard MIDI default range)
+    this.setParam('bend', (value / 8192) * 2);
   }
 
-  modWheel(_channel: number, _value: number): void {
-    // M3 phase 1: not implemented.
+  modWheel(_channel: number, value: number): void {
+    // 0..127 → 0..1
+    this.setParam('modwheel', value / 127);
   }
 
   slot(_slot: AbstractSlot, _value: number): void {
-    // M3 phase 1: knobs not wired. M5 binds slots to DSP params.
+    // M5 wires hardware slots to DSP params.
   }
 
   panic(): void {
     this.currentNote = null;
-    this.node.setParamValue(this.gatePath, 0);
+    this.setParam('gate', 0);
   }
 
   destroy(): void {

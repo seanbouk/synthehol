@@ -1,35 +1,166 @@
 declare name "psg";
 declare author "Synthehol";
-declare version "0.1";
-declare description "Monophonic PSG synth — M3 phase 1: 1 oscillator, 4 waveforms, fixed ADSR.";
+declare version "0.2";
+declare description "Mono PSG synth — M4: 2 osc + shape morph + filter + drive + LFO + ADSR. Sync still a no-op.";
 
 import("stdfaust.lib");
 
-// Control inputs driven from the host engine.
-// (`waveform` is a Faust reserved word for inline tables — using `wsel`
-// for the variable; the UI label stays "waveform" so the host engine
-// resolves the param by that name.)
-freq = hslider("freq", 440, 20, 20000, 0.01);
-gain = hslider("gain", 0.5, 0,  1,     0.01);
-gate = button("gate");
-wsel = hslider("waveform", 1, 0, 3, 1);
+// ─── Host-driven inputs ─────────────────────────────────────────────
 
-// Fixed ADSR for M3 phase 1; becomes user-controllable in M5.
-attack  = 0.01;
-decay   = 0.15;
-sustain = 0.7;
-release = 0.25;
+freq      = hslider("freq",      440, 20, 20000, 0.01);
+gain      = hslider("gain",      0.5, 0,  1,     0.01);
+gate      = button("gate");
 
-// Oscillators. Triangle stands in for the mid-skew position of the ramp
-// morph that lands in M4 — saw / reverse-saw become reachable then.
-osc_pulse = os.square(freq);
-osc_ramp  = os.triangle(freq);
-osc_sine  = os.osc(freq);
-osc_noise = no.noise;
+// Pitch bend, in semitones (host converts MIDI -8192..+8191 to ±2).
+bend      = hslider("bend",      0,  -2,  2,    0.01);
 
-voice = ba.selectn(4, int(wsel), osc_pulse, osc_ramp, osc_sine, osc_noise);
+// Mod wheel 0..1 — drives a fixed gentle vibrato (5 Hz, ±50 cents).
+modwheel  = hslider("modwheel",  0,   0,  1,    0.01);
+
+// ─── Voice controls (UI lands in M5 — defaults give a real synth voice) ─
+
+shape     = hslider("shape",            0.5, 0, 1, 0.001);
+
+// 0 = pulse, 1 = ramp, 2 = sine, 3 = noise
+osc1_wave = hslider("osc1_wave",        1, 0, 3, 1);
+osc2_wave = hslider("osc2_wave",        1, 0, 3, 1);
+
+osc2_octave = hslider("osc2_octave",    0, -2, 2, 1);
+osc2_detune = hslider("osc2_detune",    5, -50, 50, 0.1);  // cents
+
+osc_mix     = hslider("osc_mix",        0.3, 0, 1, 0.01);
+
+sync_on     = checkbox("sync");   // toggled by UI; DSP wiring deferred
+ring_on     = checkbox("ring");
+
+drive       = hslider("drive",          0,   0, 1, 0.01);
+drive_type  = hslider("drive_type",     0,   0, 1, 1);  // 0 = soft, 1 = fold
+
+cutoff      = hslider("cutoff",         5000, 20, 20000, 0.1);
+resonance   = hslider("resonance",      0.2, 0, 0.99, 0.001);
+filter_mode = hslider("filter_mode",    0, 0, 3, 1);   // 0=LP 1=HP 2=BP 3=Notch
+filter_env_amount = hslider("filter_env_amount", 0.4, -1, 1, 0.01);
+
+attack      = hslider("attack",         0.005, 0.001, 5, 0.001);
+decay       = hslider("decay",          0.2,   0.001, 5, 0.001);
+sustain     = hslider("sustain",        0.6,   0,  1, 0.01);
+release     = hslider("release",        0.3,   0.001, 5, 0.001);
+
+lfo_rate    = hslider("lfo_rate",       4,   0.1, 20, 0.01);
+lfo_depth   = hslider("lfo_depth",      0,   0, 1, 0.01);
+// 0 = pitch, 1 = cutoff, 2 = amp, 3 = shape
+lfo_dest    = hslider("lfo_dest",       1, 0, 3, 1);
+
+
+// ─── Modulation primitives ──────────────────────────────────────────
 
 env = en.adsr(attack, decay, sustain, release, gate);
 
-// Mono signal duplicated to stereo at the output.
-process = voice * env * gain <: _, _;
+free_lfo = os.osc(lfo_rate) * lfo_depth;
+
+// Vibrato driven by mod wheel: fixed 5 Hz rate, up to ±50 cents depth.
+vibrato_cents  = os.osc(5.0) * modwheel * 50.0;
+vibrato_factor = pow(2.0, vibrato_cents / 1200.0);
+
+// Free-LFO destinations.
+lfo_pitch_cents  = free_lfo * (lfo_dest == 0) * 100.0;
+lfo_pitch_factor = pow(2.0, lfo_pitch_cents / 1200.0);
+
+lfo_cutoff_oct   = free_lfo * (lfo_dest == 1) * 4.0;
+lfo_amp_factor   = 1.0 + free_lfo * (lfo_dest == 2) * 0.5;
+lfo_shape_mod    = free_lfo * (lfo_dest == 3) * 0.5;
+
+mod_shape = max(0.0, min(1.0, shape + lfo_shape_mod));
+
+
+// ─── Pitch ──────────────────────────────────────────────────────────
+
+bend_factor = pow(2.0, bend / 12.0);
+base_freq   = freq * bend_factor * vibrato_factor * lfo_pitch_factor;
+
+f1 = base_freq;
+f2 = base_freq * pow(2.0, osc2_octave) * pow(2.0, osc2_detune / 1200.0);
+
+
+// ─── Shape-aware voice helpers ──────────────────────────────────────
+
+// Variable-skew ramp: skew=0 → reverse-saw, 0.5 → triangle, 1 → saw.
+ramp_voice(f, k) = 2.0 * y - 1.0
+with {
+    ph      = os.lf_sawpos(f);
+    skew    = max(0.01, min(0.99, k));
+    rising  = ph / skew;
+    falling = (1.0 - ph) / (1.0 - skew);
+    y       = select2(ph < skew, falling, rising);
+};
+
+// Phase-distorted sine (Casio CZ style):
+//   k=0 → pure sine, k=1 → heavy compression (saw-like brightness).
+phase_distorted_sine(f, k) = sin(warped * 2.0 * ma.PI)
+with {
+    ph     = os.lf_sawpos(f);
+    t      = 0.5 - k * 0.45;             // 0.5 → 0.05 as k goes 0 → 1
+    warped = select2(ph < t,
+                     0.5 + (ph - t) * 0.5 / (1.0 - t),
+                     ph * 0.5 / t);
+};
+
+
+// ─── Oscillators ────────────────────────────────────────────────────
+
+duty(k)        = max(0.01, min(0.99, k));
+pulse_voice(f) = os.pulsetrain(f, duty(mod_shape));
+
+osc1 = ba.selectn(4, int(osc1_wave),
+    pulse_voice(f1),
+    ramp_voice(f1, mod_shape),
+    phase_distorted_sine(f1, mod_shape),
+    no.noise);
+
+osc2 = ba.selectn(4, int(osc2_wave),
+    pulse_voice(f2),
+    ramp_voice(f2, mod_shape),
+    phase_distorted_sine(f2, mod_shape),
+    no.noise);
+
+
+// ─── Mix / ring (sync is a no-op for M4) ────────────────────────────
+
+ring_signal = osc1 * osc2;
+mixed       = osc1 * (1.0 - osc_mix) + osc2 * osc_mix;
+combined    = mixed * (1.0 - ring_on) + ring_signal * ring_on;
+
+
+// ─── Drive (waveshaper) ─────────────────────────────────────────────
+
+// Both modes are dry-blended with `drive` so 0 = clean.
+soft_drive(x) = x * (1.0 - drive)
+              + ma.tanh(x * (1.0 + drive * 4.0)) * drive;
+
+fold_drive(x) = x * (1.0 - drive)
+              + sin(x * (1.0 + drive * 6.0) * ma.PI * 0.5) * drive;
+
+driven = select2(drive_type < 0.5, fold_drive(combined), soft_drive(combined));
+
+
+// ─── Filter ────────────────────────────────────────────────────────
+
+q = 0.5 + resonance * 19.5;
+
+mod_cutoff_oct  = env * filter_env_amount * 4.0 + lfo_cutoff_oct;
+modulated_cutoff = max(20.0, min(20000.0, cutoff * pow(2.0, mod_cutoff_oct)));
+
+filt_lp    = fi.resonlp(modulated_cutoff, q, 1.0, driven);
+filt_hp    = fi.resonhp(modulated_cutoff, q, 1.0, driven);
+filt_bp    = fi.resonbp(modulated_cutoff, q, 1.0, driven);
+// Simple notch: subtract the band-pass output from the dry signal.
+filt_notch = driven - filt_bp;
+
+filtered = ba.selectn(4, int(filter_mode),
+    filt_lp, filt_hp, filt_bp, filt_notch);
+
+
+// ─── Output ─────────────────────────────────────────────────────────
+
+out_signal = filtered * env * gain * lfo_amp_factor;
+process    = out_signal <: _, _;

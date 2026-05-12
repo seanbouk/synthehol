@@ -94,6 +94,32 @@ function syncDevices(): void {
   }
 }
 
+// Devtools convenience: in dev builds, attach a global so you can poke
+// at engines from the console without imports. Strip in production.
+if (import.meta.env.DEV) {
+  (globalThis as unknown as { synthehol: unknown }).synthehol = {
+    engineRegistry,
+    midiManager,
+    appState: () => useAppStore.getState(),
+    // Set a DSP param on the active device's engine (if any).
+    setParam(name: string, value: number) {
+      const tab = useAppStore.getState().activeTab;
+      if (typeof tab !== 'object' || tab.kind !== 'device') {
+        console.warn('No device tab is active');
+        return;
+      }
+      const engine = engineRegistry.get(tab.deviceId) as
+        | { setParam?: (n: string, v: number) => void }
+        | undefined;
+      if (!engine?.setParam) {
+        console.warn('Active engine has no setParam method');
+        return;
+      }
+      engine.setParam(name, value);
+    }
+  };
+}
+
 export function App() {
   useEffect(() => midiManager.subscribe(syncDevices), []);
   return <TabContainer />;
