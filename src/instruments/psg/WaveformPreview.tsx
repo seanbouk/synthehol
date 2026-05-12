@@ -17,6 +17,8 @@ interface WaveformPreviewProps {
   osc2_octave: number;
   osc2_detune: number;   // cents
   ring_on: number;
+  drive: number;         // 0..1
+  drive_type: number;    // 0 = soft, 1 = fold
 }
 
 const WIDTH = 480;
@@ -57,6 +59,17 @@ function oscSample(phase: number, wave: number, shape: number): number {
   }
 }
 
+// Mirrors psg.dsp's drive section. Dry-blended so drive=0 is identity.
+function applyDrive(x: number, drive: number, type: number): number {
+  if (drive <= 0) return x;
+  if (type === 0) {
+    // Soft saturation (tanh)
+    return x * (1 - drive) + Math.tanh(x * (1 + drive * 4)) * drive;
+  }
+  // Wave fold (sine fold)
+  return x * (1 - drive) + Math.sin(x * (1 + drive * 6) * Math.PI * 0.5) * drive;
+}
+
 export function WaveformPreview({
   osc1_wave,
   osc2_wave,
@@ -64,7 +77,9 @@ export function WaveformPreview({
   osc_mix,
   osc2_octave,
   osc2_detune,
-  ring_on
+  ring_on,
+  drive,
+  drive_type
 }: WaveformPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -119,16 +134,17 @@ export function WaveformPreview({
       const o1 = oscSample(phase1, osc1_wave, shape);
       const o2 = osc2Off ? 0 : oscSample(phase2, osc2_wave, shape);
 
-      const sample = effectiveRing
+      const mixed = effectiveRing
         ? o1 * o2
         : o1 * (1 - effectiveMix) + o2 * effectiveMix;
+      const sample = applyDrive(mixed, drive, drive_type);
 
       const y = HEIGHT / 2 - sample * (HEIGHT / 2 - 4);
       if (x === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
-  }, [osc1_wave, osc2_wave, shape, osc_mix, osc2_octave, osc2_detune, ring_on]);
+  }, [osc1_wave, osc2_wave, shape, osc_mix, osc2_octave, osc2_detune, ring_on, drive, drive_type]);
 
   return (
     <canvas

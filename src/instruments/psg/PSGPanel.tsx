@@ -223,7 +223,8 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
       <section className="psg-section">
         <h3>Voice</h3>
         <p className="muted" style={{ fontSize: 11, marginTop: 0, marginBottom: 8 }}>
-          One representative cycle of OSC 1 mixed with OSC 2 (or ring-modded). Pre-drive, pre-filter.
+          OSC 1 mixed with OSC 2 (or ring-modded), with drive applied. Filter
+          isn't shown — it shapes spectrum over time, not the per-cycle waveform.
         </p>
         <WaveformPreview
           osc1_wave={params.osc1_wave}
@@ -233,6 +234,8 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
           osc2_octave={params.osc2_octave}
           osc2_detune={params.osc2_detune}
           ring_on={params.ring_on}
+          drive={params.drive}
+          drive_type={params.drive_type}
         />
       </section>
 
