@@ -41,8 +41,13 @@ class MIDIManager {
   }
 
   private currentSignature(): string {
+    // Deliberately excludes `connection` (open/closed/pending): setting
+    // onmidimessage transitions a port from closed to open, fires
+    // statechange, and would loop us into a redundant resync. State
+    // (connected/disconnected) is what we actually care about.
     return this.inputs
-      .map((i) => `${i.id}|${i.name ?? ''}|${i.state}|${i.connection}`)
+      .map((i) => `${i.id}|${i.name ?? ''}|${i.state}`)
+      .sort()
       .join(';');
   }
 
