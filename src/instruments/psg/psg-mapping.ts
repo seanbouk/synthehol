@@ -52,8 +52,8 @@ export function mapSlotToPSG(
     switch (slot.index) {
       case 1: return { name: 'osc_mix',     value: t };
       case 2: return { name: 'osc2_detune', value: (t - 0.5) * 100 }; // ±50 cents
-      case 3: return { name: 'lfo_rate',    value: logScale(t, 0.1, 20) };
-      case 4: return { name: 'lfo_depth',   value: t };
+      case 3: return { name: 'lfo_depth',   value: t };
+      case 4: return { name: 'lfo_rate',    value: logScale(t, 0.1, 20) };
     }
     return null;
   }

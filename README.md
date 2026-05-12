@@ -190,8 +190,8 @@ Reference mapping for the Arturia Minilab 3 (primary development device). Other 
 | Knob 8         | 117  | Envelope release                              |
 | Slider 1       | 15   | OSC mix (OSC1 ↔ OSC2 balance)                 |
 | Slider 2       | 30   | OSC2 detune (±50 cents fine)                  |
-| Slider 3       | 31   | LFO rate                                      |
-| Slider 4       | 14   | LFO depth                                     |
+| Slider 3       | 31   | LFO depth                                     |
+| Slider 4       | 14   | LFO rate                                      |
 | Encoder        | 28   | Cycle OSC1 waveform                           |
 | Mod wheel      | CC1  | Vibrato depth (gentle LFO → pitch, fixed rate)|
 | Pitch bend     | —    | Pitch ±2 semitones                            |
