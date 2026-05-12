@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { PSG_DEFAULTS, type PSGParams, type PSGParamName } from './psg-defaults';
 import { engineRegistry } from '../../audio/engine-registry';
+import { loadPSG, savePSG } from './psg-persistence';
 
 /**
  * Per-device PSG parameter state. Single source of truth: the UI reads
  * from here, MIDI hardware writes here via the engine's onSlotInput
- * callback, and every write also drives the underlying DSP node.
+ * callback, and every write also drives the underlying DSP node and
+ * persists to localStorage (debounced).
  */
 interface PSGStateShape {
   paramsPerDevice: Record<string, PSGParams>;
@@ -20,7 +22,8 @@ export const usePSGStore = create<PSGStateShape>((set, get) => ({
   ensure(deviceId) {
     const existing = get().paramsPerDevice[deviceId];
     if (existing) return existing;
-    const fresh = { ...PSG_DEFAULTS };
+    // Restore saved patch if present, otherwise start from defaults.
+    const fresh = loadPSG(deviceId) ?? { ...PSG_DEFAULTS };
     set((s) => ({ paramsPerDevice: { ...s.paramsPerDevice, [deviceId]: fresh } }));
     return fresh;
   },
@@ -35,18 +38,26 @@ export const usePSGStore = create<PSGStateShape>((set, get) => ({
         }
       };
     });
+
     // Drive the DSP. Engine may not be ready yet during startup; that's
     // fine — defaults already match the .dsp's initial values.
     const engine = engineRegistry.get(deviceId) as
       | { setParam?: (n: string, v: number) => void }
       | undefined;
     engine?.setParam?.(name, value as number);
+
+    // Persist (debounced). Read back from store so we save the full
+    // merged params object, not just the single field.
+    const params = get().paramsPerDevice[deviceId];
+    if (params) savePSG(deviceId, params);
   },
 
   resetDevice(deviceId) {
+    const defaults = { ...PSG_DEFAULTS };
     set((s) => ({
-      paramsPerDevice: { ...s.paramsPerDevice, [deviceId]: { ...PSG_DEFAULTS } }
+      paramsPerDevice: { ...s.paramsPerDevice, [deviceId]: defaults }
     }));
+    savePSG(deviceId, defaults);
   }
 }));
 
