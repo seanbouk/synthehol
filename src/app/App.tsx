@@ -4,6 +4,7 @@ import { midiManager } from '../midi/access';
 import { Dispatcher } from '../midi/dispatcher';
 import { decode } from '../midi/decode';
 import { profileFor } from '../midi/device-profile';
+import { isMusicalPort } from '../midi/port-filter';
 import { TabContainer } from './shell/TabContainer';
 
 /**
@@ -19,7 +20,9 @@ const dispatchers = new Map<string, Dispatcher>();
 
 function syncDevices(): void {
   const store = useAppStore.getState();
-  const inputs = midiManager.inputs;
+  // Hide ports that exist for DAW control, vendor-specific software bridges,
+  // or DIN passthrough — see midi/port-filter.ts.
+  const inputs = midiManager.inputs.filter((i) => isMusicalPort(i.name ?? ''));
 
   store.setDevices(
     inputs.map((i) => ({
