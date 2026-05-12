@@ -17,6 +17,7 @@ interface WaveformPreviewProps {
   osc2_octave: number;
   osc2_detune: number;   // cents
   ring_on: number;
+  drive_on: number;
   drive: number;         // 0..1
   drive_type: number;    // 0 = soft, 1 = fold
 }
@@ -78,6 +79,7 @@ export function WaveformPreview({
   osc2_octave,
   osc2_detune,
   ring_on,
+  drive_on,
   drive,
   drive_type
 }: WaveformPreviewProps) {
@@ -137,14 +139,14 @@ export function WaveformPreview({
       const mixed = effectiveRing
         ? o1 * o2
         : o1 * (1 - effectiveMix) + o2 * effectiveMix;
-      const sample = applyDrive(mixed, drive, drive_type);
+      const sample = drive_on ? applyDrive(mixed, drive, drive_type) : mixed;
 
       const y = HEIGHT / 2 - sample * (HEIGHT / 2 - 4);
       if (x === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
-  }, [osc1_wave, osc2_wave, shape, osc_mix, osc2_octave, osc2_detune, ring_on, drive, drive_type]);
+  }, [osc1_wave, osc2_wave, shape, osc_mix, osc2_octave, osc2_detune, ring_on, drive_on, drive, drive_type]);
 
   return (
     <canvas

@@ -15,10 +15,12 @@ export interface PSGParams {
   ring_on: number;           // 0 / 1
 
   // Drive (waveshaper)
+  drive_on: number;          // 0 / 1 — section bypass
   drive: number;             // 0..1
   drive_type: number;        // 0 = soft, 1 = fold
 
   // Filter
+  filter_on: number;         // 0 / 1 — section bypass
   cutoff: number;            // 20..20000 Hz
   resonance: number;         // 0..0.99
   filter_mode: number;       // 0 = LP, 1 = HP, 2 = BP, 3 = Notch
@@ -31,6 +33,7 @@ export interface PSGParams {
   release: number;           // 0.001..5 seconds
 
   // LFO
+  lfo_on: number;            // 0 / 1 — section bypass
   lfo_rate: number;          // 0.1..20 Hz
   lfo_depth: number;         // 0..1
   lfo_dest: number;          // 0 = pitch, 1 = cutoff, 2 = amp, 3 = shape
@@ -47,9 +50,11 @@ export const PSG_DEFAULTS: PSGParams = {
   sync_on: 0,
   ring_on: 0,
 
+  drive_on: 0,
   drive: 0,
   drive_type: 0,
 
+  filter_on: 1,
   cutoff: 5000,
   resonance: 0.2,
   filter_mode: 0,
@@ -60,6 +65,7 @@ export const PSG_DEFAULTS: PSGParams = {
   sustain: 0.6,
   release: 0.3,
 
+  lfo_on: 0,
   lfo_rate: 4,
   lfo_depth: 0,
   lfo_dest: 1

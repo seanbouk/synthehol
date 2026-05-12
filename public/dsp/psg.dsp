@@ -34,9 +34,11 @@ osc_mix     = hslider("osc_mix",        0.3, 0, 1, 0.01);
 sync_on     = checkbox("sync");   // toggled by UI; DSP wiring deferred
 ring_on     = checkbox("ring");
 
-drive       = hslider("drive",          0,   0, 1, 0.01);
-drive_type  = hslider("drive_type",     0,   0, 1, 1);  // 0 = soft, 1 = fold
+drive_on    = hslider("drive_on",       0, 0, 1, 1);
+drive       = hslider("drive",          0, 0, 1, 0.01);
+drive_type  = hslider("drive_type",     0, 0, 1, 1);  // 0 = soft, 1 = fold
 
+filter_on   = hslider("filter_on",      1, 0, 1, 1);
 cutoff      = hslider("cutoff",         5000, 20, 20000, 0.1);
 resonance   = hslider("resonance",      0.2, 0, 0.99, 0.001);
 filter_mode = hslider("filter_mode",    0, 0, 3, 1);   // 0=LP 1=HP 2=BP 3=Notch
@@ -47,6 +49,7 @@ decay       = hslider("decay",          0.2,   0.001, 5, 0.001);
 sustain     = hslider("sustain",        0.6,   0,  1, 0.01);
 release     = hslider("release",        0.3,   0.001, 5, 0.001);
 
+lfo_on      = hslider("lfo_on",         0, 0, 1, 1);
 lfo_rate    = hslider("lfo_rate",       4,   0.1, 20, 0.01);
 lfo_depth   = hslider("lfo_depth",      0,   0, 1, 0.01);
 // 0 = pitch, 1 = cutoff, 2 = amp, 3 = shape
@@ -73,7 +76,7 @@ lfo_depth_s = lfo_depth : smoo20;
 
 env = en.adsr(attack, decay, sustain, release, gate);
 
-free_lfo = os.osc(lfo_rate) * lfo_depth_s;
+free_lfo = os.osc(lfo_rate) * lfo_depth_s * lfo_on;
 
 // Vibrato driven by mod wheel: fixed 5 Hz rate, up to ±50 cents depth.
 vibrato_cents  = os.osc(5.0) * modwheel * 50.0;
@@ -168,7 +171,8 @@ soft_drive(x) = x * (1.0 - drive_s)
 fold_drive(x) = x * (1.0 - drive_s)
               + sin(x * (1.0 + drive_s * 6.0) * ma.PI * 0.5) * drive_s;
 
-driven = select2(drive_type < 0.5, fold_drive(combined), soft_drive(combined));
+drive_picked = select2(drive_type < 0.5, fold_drive(combined), soft_drive(combined));
+driven       = select2(drive_on > 0.5, combined, drive_picked);
 
 
 // ─── Filter ────────────────────────────────────────────────────────
@@ -184,8 +188,9 @@ filt_bp    = fi.resonbp(modulated_cutoff, q, 1.0, driven);
 // Simple notch: subtract the band-pass output from the dry signal.
 filt_notch = driven - filt_bp;
 
-filtered = ba.selectn(4, int(filter_mode),
+filt_picked = ba.selectn(4, int(filter_mode),
     filt_lp, filt_hp, filt_bp, filt_notch);
+filtered = select2(filter_on > 0.5, driven, filt_picked);
 
 
 // ─── Output ─────────────────────────────────────────────────────────
