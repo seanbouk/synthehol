@@ -7,17 +7,36 @@
  *
  * Heuristic, not authoritative. Future work: per-device port selection UI
  * so the user can override when this gets it wrong.
+ *
+ * App.tsx logs the classification on each port sync so silent
+ * mis-classifications are visible in the browser console.
  */
-const HIDE_PATTERNS: RegExp[] = [
-  /\bMCU\b/i,                // Mackie Control Universal
-  /\bHUI\b/i,                // Human User Interface (Mackie's DAW protocol)
-  /\bALV\b/i,                // Arturia Analog Lab V bridge
-  /\bDAW\s*CTRL\b/i,         // generic DAW-control naming
-  /\bControl\s*Surface\b/i,
-  /\bTHRU\b/i,               // DIN-thru / passthrough ports
-  /Komplete\s*Kontrol\s*DAW/i // NI's DAW-control variant
+interface HidePattern {
+  pattern: RegExp;
+  label: string;
+}
+
+const HIDE_PATTERNS: HidePattern[] = [
+  { pattern: /\bMCU\b/i,                 label: 'MCU (DAW control)' },
+  { pattern: /\bHUI\b/i,                 label: 'HUI (DAW control)' },
+  { pattern: /\bALV\b/i,                 label: 'ALV (Arturia software bridge)' },
+  { pattern: /\bDAW\s*CTRL\b/i,          label: 'DAW control' },
+  { pattern: /\bControl\s*Surface\b/i,   label: 'Control surface' },
+  { pattern: /\bTHRU\b/i,                label: 'DIN thru / passthrough' },
+  { pattern: /Komplete\s*Kontrol\s*DAW/i, label: 'NI Komplete Kontrol DAW' }
 ];
 
+export type PortClassification =
+  | { keep: true }
+  | { keep: false; matchedLabel: string };
+
+export function classifyPort(name: string): PortClassification {
+  for (const { pattern, label } of HIDE_PATTERNS) {
+    if (pattern.test(name)) return { keep: false, matchedLabel: label };
+  }
+  return { keep: true };
+}
+
 export function isMusicalPort(name: string): boolean {
-  return !HIDE_PATTERNS.some((p) => p.test(name));
+  return classifyPort(name).keep;
 }
