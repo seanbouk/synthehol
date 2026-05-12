@@ -2,20 +2,19 @@ import { FaustMonoDspGenerator, type FaustMonoAudioWorkletNode } from '@grame/fa
 import type { Engine } from './engine';
 import type { AbstractSlot } from '../types/midi';
 import { getFaustCompiler } from './faust-runtime';
+import { mapSlotToPSG } from '../instruments/psg/psg-mapping';
+import type { PSGParamName } from '../instruments/psg/psg-defaults';
 
 /**
- * PSG instrument — M4.
+ * PSG instrument — M5.
  *
  * Hosts a Faust-compiled AudioWorkletNode (see public/dsp/psg.dsp).
- *
- * Parameter paths are resolved lazily by name suffix the first time
- * each is needed, so the engine is robust to whatever prefix Faust
- * generates (with or without vgroups, with or without `declare name`).
- *
- * M4 wires up pitch bend + mod-wheel vibrato from the dispatcher
- * because those flow direct from MIDI and don't need UI. Knob/slider
- * routing through `slot()` lands in M5; for now `setParam(name, value)`
- * is exposed so the dev console / future UI can drive every DSP param.
+ * Tracks its own paramValues so encoder cycling can be relative to the
+ * current osc1_wave value. Exposes:
+ *   - setParam(name, value): set any DSP param directly (used by store)
+ *   - analyser: AnalyserNode tapped on the output for the oscilloscope
+ *   - onSlotInput: callback for hardware-driven slot input, set by App
+ *     to bridge into the PSG store
  */
 
 const PSG_DSP_URL = import.meta.env.BASE_URL + 'dsp/psg.dsp';
@@ -36,17 +35,24 @@ async function ensurePSGGenerator(): Promise<FaustMonoDspGenerator> {
   return generatorPromise;
 }
 
+export type SlotInputHandler = (name: PSGParamName, value: number) => void;
+
 export class PSGEngine implements Engine {
   private node: FaustMonoAudioWorkletNode;
   private gain: GainNode;
+  readonly analyser: AnalyserNode;
   private currentNote: number | null = null;
   private allParamPaths: string[];
   private pathCache = new Map<string, string>();
+  private paramValues = new Map<string, number>();
+  /** Set by App.tsx to bridge hardware slot input into the PSG store. */
+  onSlotInput: SlotInputHandler | null = null;
   readonly output: AudioNode;
 
-  private constructor(node: FaustMonoAudioWorkletNode, gain: GainNode) {
+  private constructor(node: FaustMonoAudioWorkletNode, gain: GainNode, analyser: AnalyserNode) {
     this.node = node;
     this.gain = gain;
+    this.analyser = analyser;
     this.output = gain;
     this.allParamPaths = node.getParams();
     console.log('[PSG] available params:', this.allParamPaths);
@@ -58,14 +64,17 @@ export class PSGEngine implements Engine {
     if (!node) throw new Error('Faust failed to create PSG node');
     const gain = ctx.createGain();
     gain.gain.value = 0.5;
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0;
     node.connect(gain);
-    return new PSGEngine(node, gain);
+    gain.connect(analyser);
+    return new PSGEngine(node, gain, analyser);
   }
 
   /**
-   * Set a DSP param by short name (the slider/button label in the .dsp).
-   * Resolves to the full Faust path on first call and caches.
-   * Public so devtools and the M5 UI can drive every param.
+   * Set a DSP param by short name. Resolves the full Faust path lazily
+   * on first call. Public so the PSG store and devtools can drive it.
    */
   setParam(name: string, value: number): void {
     let path = this.pathCache.get(name);
@@ -80,6 +89,7 @@ export class PSGEngine implements Engine {
       path = match;
       this.pathCache.set(name, path);
     }
+    this.paramValues.set(name, value);
     this.node.setParamValue(path, value);
   }
 
@@ -99,17 +109,19 @@ export class PSGEngine implements Engine {
   }
 
   pitchBend(_channel: number, value: number): void {
-    // value is -8192..+8191 → ±2 semitones (standard MIDI default range)
     this.setParam('bend', (value / 8192) * 2);
   }
 
   modWheel(_channel: number, value: number): void {
-    // 0..127 → 0..1
     this.setParam('modwheel', value / 127);
   }
 
-  slot(_slot: AbstractSlot, _value: number): void {
-    // M5 wires hardware slots to DSP params.
+  slot(slot: AbstractSlot, value: number): void {
+    const currentOsc1 = this.paramValues.get('osc1_wave') ?? 1;
+    const result = mapSlotToPSG(slot, value, currentOsc1);
+    if (result && this.onSlotInput) {
+      this.onSlotInput(result.name, result.value as number);
+    }
   }
 
   panic(): void {
@@ -120,8 +132,9 @@ export class PSGEngine implements Engine {
   destroy(): void {
     this.panic();
     setTimeout(() => {
-      try { this.node.disconnect(); } catch { /* already disconnected */ }
-      try { this.gain.disconnect(); } catch { /* already disconnected */ }
+      try { this.node.disconnect(); } catch { /* */ }
+      try { this.gain.disconnect(); } catch { /* */ }
+      try { this.analyser.disconnect(); } catch { /* */ }
     }, 100);
   }
 }

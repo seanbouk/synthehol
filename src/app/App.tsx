@@ -9,6 +9,7 @@ import { getAudioContext } from '../audio/context';
 import { PSGEngine } from '../audio/psg-engine';
 import { engineRegistry } from '../audio/engine-registry';
 import { dispatchToEngine } from '../audio/dispatch-to-engine';
+import { usePSGStore } from '../instruments/psg/psg-state';
 import { TabContainer } from './shell/TabContainer';
 
 /**
@@ -32,6 +33,22 @@ async function setupEngineFor(
     engine.destroy();
     return;
   }
+
+  // Bridge hardware slot input into the PSG store. The store is the
+  // single source of truth — its setParam updates both state and DSP,
+  // so UI reflects hardware changes automatically.
+  engine.onSlotInput = (name, value) => {
+    usePSGStore.getState().setParam(deviceId, name, value as never);
+  };
+
+  // Seed the engine with the device's stored PSG params (defaults if
+  // first time). This also primes the engine's paramValues cache so
+  // encoder cycling has the right "current" osc1_wave.
+  const params = usePSGStore.getState().ensure(deviceId);
+  for (const [name, value] of Object.entries(params)) {
+    engine.setParam(name, value as number);
+  }
+
   engine.output.connect(ctx.destination);
   engineRegistry.set(deviceId, engine);
   dispatcher.subscribe((msg) => dispatchToEngine(msg, engine, profile));

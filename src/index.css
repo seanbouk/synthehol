@@ -80,7 +80,7 @@ button.secondary:hover { border-color: var(--muted); }
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-  max-width: 960px;
+  max-width: 1100px;
   width: 100%;
   margin: 0 auto;
 }
@@ -124,3 +124,154 @@ li {
 
 li strong { font-weight: 600; }
 li .muted { font-size: 12px; display: block; margin-top: 2px; }
+
+code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+/* ─── Device tab + PSG panel ────────────────────────────────────── */
+
+.device-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.device-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.device-header h2 { margin-bottom: 4px; }
+.device-header p { margin: 0; font-size: 12px; }
+
+.psg-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.psg-section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.psg-section h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.psg-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.psg-row:last-child { margin-bottom: 0; }
+
+/* ─── Knob ───────────────────────────────────────────────────────── */
+
+.knob {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+  user-select: none;
+}
+
+.knob-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.knob-value {
+  font-size: 11px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Slider ─────────────────────────────────────────────────────── */
+
+.slider {
+  min-width: 160px;
+  flex: 1;
+  max-width: 260px;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.slider-label {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.slider-value {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.slider input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+/* ─── Button group (segmented) ─────────────────────────────────── */
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.button-group-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.button-group-row {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+button.btn-seg {
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+button.btn-seg:hover { color: var(--text); }
+
+button.btn-seg.active {
+  background: var(--accent);
+  color: #0f1117;
+  font-weight: 600;
+}
