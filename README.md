@@ -148,7 +148,7 @@ The **shape** knob is a per-waveform character control whose meaning adapts to t
 |----------|---------------------------------------|---------------------------------------------------------------------------------------|
 | Pulse    | duty cycle 1% → 50% (square) → 99%    | Phase inverts past 50% — audible when stacked or ring-modulated with the other osc    |
 | Ramp     | reverse-saw → triangle → saw          | One continuous control across all three ramp shapes                                   |
-| Sine     | pure → progressively phase-distorted  | Casio CZ-style; asymmetric, brightens toward a saw-like upper limit                   |
+| Sine     | early-compressed → pure → late-compressed | Casio CZ-style phase distortion, symmetric around 0.5 (pure sine at centre)        |
 | Noise    | short LFSR → long LFSR                | Short = metallic NES / SMS chatter; long = white-ish                                  |
 
 The shape knob affects **both oscillators simultaneously** (a single shared control — keeps the panel tidy and the morph musical).

@@ -111,11 +111,14 @@ with {
 };
 
 // Phase-distorted sine (Casio CZ style):
-//   k=0 → pure sine, k=1 → heavy compression (saw-like brightness).
+//   k=0   → first half compressed (one extreme)
+//   k=0.5 → pure sine (no distortion)
+//   k=1   → second half compressed (other extreme)
+// Symmetric around 0.5 to match pulse and ramp morph behaviour.
 phase_distorted_sine(f, k) = sin(warped * 2.0 * ma.PI)
 with {
     ph     = os.lf_sawpos(f);
-    t      = 0.5 - k * 0.45;             // 0.5 → 0.05 as k goes 0 → 1
+    t      = 0.05 + k * 0.9;             // 0.05 → 0.95 as k goes 0 → 1
     warped = select2(ph < t,
                      0.5 + (ph - t) * 0.5 / (1.0 - t),
                      ph * 0.5 / t);

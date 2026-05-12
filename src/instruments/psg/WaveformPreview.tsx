@@ -38,8 +38,9 @@ function oscSample(phase: number, wave: number, shape: number): number {
       return 2 * y - 1;
     }
     case 2: {
-      // Sine — phase distortion (Casio CZ)
-      const t = 0.5 - shape * 0.45;
+      // Sine — phase distortion (Casio CZ), symmetric around shape=0.5.
+      // shape=0.5 -> pure sine; edges compress the first or second half.
+      const t = 0.05 + shape * 0.9;
       const warped = phase < t
         ? (phase * 0.5) / t
         : 0.5 + ((phase - t) * 0.5) / (1 - t);
