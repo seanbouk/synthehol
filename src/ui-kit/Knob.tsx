@@ -11,6 +11,7 @@ interface KnobProps {
   step?: number;
   /** Custom value formatter for the readout. */
   format?: (v: number) => string;
+  disabled?: boolean;
   onChange: (v: number) => void;
 }
 
@@ -31,7 +32,7 @@ function fromNormalized(t: number, min: number, max: number, log: boolean, step:
   return v;
 }
 
-export function Knob({ label, value, min, max, log = false, step, format, onChange }: KnobProps) {
+export function Knob({ label, value, min, max, log = false, step, format, disabled = false, onChange }: KnobProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragRef = useRef<{ startY: number; startT: number } | null>(null);
 
@@ -54,7 +55,7 @@ export function Knob({ label, value, min, max, log = false, step, format, onChan
     const cy = SIZE / 2;
 
     // Background arc
-    ctx.strokeStyle = '#2a2f3d';
+    ctx.strokeStyle = disabled ? '#1a1d27' : '#2a2f3d';
     ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -64,7 +65,7 @@ export function Knob({ label, value, min, max, log = false, step, format, onChan
     // Value arc
     const t = toNormalized(value, min, max, log);
     const angle = ARC_START + t * (ARC_END - ARC_START);
-    ctx.strokeStyle = '#6ee7b7';
+    ctx.strokeStyle = disabled ? '#404552' : '#6ee7b7';
     ctx.beginPath();
     ctx.arc(cx, cy, RADIUS, ARC_START, angle);
     ctx.stroke();
@@ -72,21 +73,22 @@ export function Knob({ label, value, min, max, log = false, step, format, onChan
     // Indicator line from centre
     const ix = cx + Math.cos(angle) * (RADIUS - 6);
     const iy = cy + Math.sin(angle) * (RADIUS - 6);
-    ctx.strokeStyle = '#e6e8ee';
+    ctx.strokeStyle = disabled ? '#5b6072' : '#e6e8ee';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(ix, iy);
     ctx.stroke();
-  }, [value, min, max, log]);
+  }, [value, min, max, log, disabled]);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (disabled) return;
       const t = toNormalized(value, min, max, log);
       dragRef.current = { startY: e.clientY, startT: t };
       (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
     },
-    [value, min, max, log]
+    [value, min, max, log, disabled]
   );
 
   const onPointerMove = useCallback(
@@ -112,15 +114,19 @@ export function Knob({ label, value, min, max, log = false, step, format, onChan
   }, [min, max, log, step, onChange]);
 
   return (
-    <div className="knob">
+    <div className={disabled ? 'knob disabled' : 'knob'}>
       <canvas
         ref={canvasRef}
-        style={{ width: SIZE, height: SIZE, cursor: 'ns-resize' }}
+        style={{
+          width: SIZE,
+          height: SIZE,
+          cursor: disabled ? 'not-allowed' : 'ns-resize'
+        }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        onDoubleClick={onDoubleClick}
+        onDoubleClick={disabled ? undefined : onDoubleClick}
       />
       <div className="knob-label">{label}</div>
       <div className="knob-value">{format ? format(value) : value.toFixed(2)}</div>

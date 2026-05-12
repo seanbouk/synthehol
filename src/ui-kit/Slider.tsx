@@ -5,12 +5,13 @@ interface SliderProps {
   max: number;
   step?: number;
   format?: (v: number) => string;
+  disabled?: boolean;
   onChange: (v: number) => void;
 }
 
-export function Slider({ label, value, min, max, step, format, onChange }: SliderProps) {
+export function Slider({ label, value, min, max, step, format, disabled = false, onChange }: SliderProps) {
   return (
-    <div className="slider">
+    <div className={disabled ? 'slider disabled' : 'slider'}>
       <div className="slider-header">
         <span className="slider-label">{label}</span>
         <span className="slider-value">{format ? format(value) : value.toFixed(2)}</span>
@@ -21,6 +22,7 @@ export function Slider({ label, value, min, max, step, format, onChange }: Slide
         min={min}
         max={max}
         step={step ?? (max - min) / 200}
+        disabled={disabled}
         onChange={(e) => onChange(parseFloat(e.target.value))}
       />
     </div>

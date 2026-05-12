@@ -21,9 +21,9 @@ modwheel  = hslider("modwheel",  0,   0,  1,    0.01);
 
 shape     = hslider("shape",            0.5, 0, 1, 0.001);
 
-// 0 = pulse, 1 = ramp, 2 = sine, 3 = noise
+// 0 = pulse, 1 = ramp, 2 = sine, 3 = noise (4 = off, OSC 2 only)
 osc1_wave = hslider("osc1_wave",        1, 0, 3, 1);
-osc2_wave = hslider("osc2_wave",        1, 0, 3, 1);
+osc2_wave = hslider("osc2_wave",        1, 0, 4, 1);
 
 osc2_octave = hslider("osc2_octave",    0, -2, 2, 1);
 osc2_detune = hslider("osc2_detune",    5, -50, 50, 0.1);  // cents
@@ -133,18 +133,26 @@ osc1 = ba.selectn(4, int(osc1_wave),
     phase_distorted_sine(f1, mod_shape),
     no.noise);
 
-osc2 = ba.selectn(4, int(osc2_wave),
+osc2 = ba.selectn(5, int(osc2_wave),
     pulse_voice(f2),
     ramp_voice(f2, mod_shape),
     phase_distorted_sine(f2, mod_shape),
-    no.noise);
+    no.noise,
+    0.0);   // 4 = off
 
 
 // ─── Mix / ring (sync is a no-op for M4) ────────────────────────────
+// When OSC 2 is off (wave == 4), the effective mix and ring amounts
+// collapse to zero so output stays at 100% OSC 1 regardless of the
+// mix slider or ring toggle.
+
+osc2_on        = int(osc2_wave) < 4;
+effective_mix  = osc_mix_s * osc2_on;
+effective_ring = ring_on   * osc2_on;
 
 ring_signal = osc1 * osc2;
-mixed       = osc1 * (1.0 - osc_mix_s) + osc2 * osc_mix_s;
-combined    = mixed * (1.0 - ring_on) + ring_signal * ring_on;
+mixed       = osc1 * (1.0 - effective_mix) + osc2 * effective_mix;
+combined    = mixed * (1.0 - effective_ring) + ring_signal * effective_ring;
 
 
 // ─── Drive (waveshaper) ─────────────────────────────────────────────

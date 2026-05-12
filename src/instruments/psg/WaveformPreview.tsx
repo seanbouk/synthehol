@@ -100,6 +100,11 @@ export function WaveformPreview({
 
     // OSC2 plays at this ratio of OSC1's frequency
     const osc2Ratio = Math.pow(2, osc2_octave) * Math.pow(2, osc2_detune / 1200);
+    // When OSC 2 is off (wave === 4), mix and ring collapse to zero so
+    // the preview shows pure OSC 1, matching the DSP behaviour.
+    const osc2Off = osc2_wave === 4;
+    const effectiveMix = osc2Off ? 0 : osc_mix;
+    const effectiveRing = osc2Off ? 0 : ring_on;
 
     ctx.strokeStyle = '#6ee7b7';
     ctx.lineWidth = 1.5;
@@ -111,11 +116,11 @@ export function WaveformPreview({
       const phase2 = phase2Raw - Math.floor(phase2Raw);
 
       const o1 = oscSample(phase1, osc1_wave, shape);
-      const o2 = oscSample(phase2, osc2_wave, shape);
+      const o2 = osc2Off ? 0 : oscSample(phase2, osc2_wave, shape);
 
-      const sample = ring_on
+      const sample = effectiveRing
         ? o1 * o2
-        : o1 * (1 - osc_mix) + o2 * osc_mix;
+        : o1 * (1 - effectiveMix) + o2 * effectiveMix;
 
       const y = HEIGHT / 2 - sample * (HEIGHT / 2 - 4);
       if (x === 0) ctx.moveTo(x, y);

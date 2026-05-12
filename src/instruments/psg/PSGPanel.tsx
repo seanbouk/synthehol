@@ -7,11 +7,16 @@ import type { PSGParams } from './psg-defaults';
 import { WaveformPreview } from './WaveformPreview';
 import { ADSRCurve } from './ADSRCurve';
 
-const WAVE_OPTIONS = [
+const OSC1_WAVE_OPTIONS = [
   { value: 0, label: 'Pulse' },
   { value: 1, label: 'Ramp' },
   { value: 2, label: 'Sine' },
   { value: 3, label: 'Noise' }
+];
+
+const OSC2_WAVE_OPTIONS = [
+  ...OSC1_WAVE_OPTIONS,
+  { value: 4, label: 'Off' }
 ];
 
 const OCTAVE_OPTIONS = [
@@ -62,6 +67,8 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
     [deviceId, setParam]
   );
 
+  const osc2Off = params.osc2_wave === 4;
+
   return (
     <div className="psg-panel">
 
@@ -71,13 +78,13 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
           <ButtonGroup
             label="OSC 1"
             value={params.osc1_wave}
-            options={WAVE_OPTIONS}
+            options={OSC1_WAVE_OPTIONS}
             onChange={(v) => set('osc1_wave', v)}
           />
           <ButtonGroup
             label="OSC 2"
             value={params.osc2_wave}
-            options={WAVE_OPTIONS}
+            options={OSC2_WAVE_OPTIONS}
             onChange={(v) => set('osc2_wave', v)}
           />
         </div>
@@ -86,6 +93,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             label="OSC 2 octave"
             value={params.osc2_octave}
             options={OCTAVE_OPTIONS}
+            disabled={osc2Off}
             onChange={(v) => set('osc2_octave', v)}
           />
         </div>
@@ -101,6 +109,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             label="OSC mix"
             value={params.osc_mix}
             min={0} max={1} step={0.01}
+            disabled={osc2Off}
             onChange={(v) => set('osc_mix', v)}
             format={(v) => `${Math.round((1 - v) * 100)} / ${Math.round(v * 100)}`}
           />
@@ -108,6 +117,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             label="OSC 2 detune"
             value={params.osc2_detune}
             min={-50} max={50} step={0.5}
+            disabled={osc2Off}
             onChange={(v) => set('osc2_detune', v)}
             format={fmtCents}
           />
@@ -117,12 +127,14 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             label="Sync"
             value={params.sync_on}
             options={[{ value: 0, label: 'Off' }, { value: 1, label: 'On' }]}
+            disabled={osc2Off}
             onChange={(v) => set('sync_on', v)}
           />
           <ButtonGroup
             label="Ring mod"
             value={params.ring_on}
             options={[{ value: 0, label: 'Off' }, { value: 1, label: 'On' }]}
+            disabled={osc2Off}
             onChange={(v) => set('ring_on', v)}
           />
         </div>

@@ -275,3 +275,23 @@ button.btn-seg.active {
   color: #0f1117;
   font-weight: 600;
 }
+
+button.btn-seg:disabled,
+button.btn-seg.active:disabled {
+  cursor: not-allowed;
+  background: transparent;
+  color: #404552;
+}
+
+.knob.disabled .knob-label,
+.knob.disabled .knob-value,
+.slider.disabled .slider-label,
+.slider.disabled .slider-value,
+.button-group.disabled .button-group-label {
+  color: #5b6072;
+}
+
+.slider.disabled input[type="range"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
