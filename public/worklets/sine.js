@@ -1,6 +1,10 @@
 /**
- * Monophonic sine engine — the M2 stub. Last note wins. Simple AR
- * envelope to avoid clicks. PSG synth (M3) will replace this entirely.
+ * Monophonic sine engine — the M2 stub. Last note wins. PSG (M3)
+ * replaces this entirely.
+ *
+ * Envelope: linear 5ms attack (snappy, click-free at audible frequencies),
+ * exponential release with a 60ms time constant (naturally smooth across
+ * the whole keyboard — slope tracks amplitude, so it can't click).
  *
  * Plain JS lives in public/ so Vite serves it verbatim — AudioWorklet
  * needs a directly-loadable URL (no module transformation).
@@ -34,14 +38,24 @@ class SineProcessor extends AudioWorkletProcessor {
 
     const twoPi = 2 * Math.PI;
     const dt = (twoPi * this.freq) / sampleRate;
-    // 5 ms approx attack/release ramp (per sample at 48 kHz that's ~1/240)
-    const ramp = 1 / (sampleRate * 0.005);
+
+    // Linear attack: 5ms full-range -> rate per sample
+    const attackRate = 1 / (sampleRate * 0.005);
+    // Exponential release: 60ms time constant
+    // amp(t) = amp(0) * exp(-t/tau); per-sample coefficient = exp(-1/(fs*tau))
+    const releaseCoeff = Math.exp(-1 / (sampleRate * 0.060));
 
     for (let i = 0; i < left.length; i++) {
       if (this.amp < this.targetAmp) {
-        this.amp = Math.min(this.targetAmp, this.amp + ramp);
+        // Attack
+        this.amp = Math.min(this.targetAmp, this.amp + attackRate);
+      } else if (this.targetAmp === 0 && this.amp > 0) {
+        // Release (exponential — smooth at any pitch)
+        this.amp *= releaseCoeff;
+        if (this.amp < 1e-5) this.amp = 0;
       } else if (this.amp > this.targetAmp) {
-        this.amp = Math.max(this.targetAmp, this.amp - ramp);
+        // Note retriggered at lower velocity — match attack rate going down
+        this.amp = Math.max(this.targetAmp, this.amp - attackRate);
       }
 
       const sample = Math.sin(this.phase) * this.amp;
