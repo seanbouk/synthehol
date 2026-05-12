@@ -1,4 +1,4 @@
-import { FaustMonoDspGenerator, type FaustMonoAudioWorkletNode } from '@grame/faustwasm';
+import { FaustPolyDspGenerator, type FaustPolyAudioWorkletNode } from '@grame/faustwasm';
 import type { Engine } from './engine';
 import type { AbstractSlot } from '../types/midi';
 import { getFaustCompiler } from './faust-runtime';
@@ -6,27 +6,29 @@ import { mapSlotToPSG } from '../instruments/psg/psg-mapping';
 import type { PSGParamName } from '../instruments/psg/psg-defaults';
 
 /**
- * PSG instrument — M5.
+ * Polyphonic PSG instrument.
  *
- * Hosts a Faust-compiled AudioWorkletNode (see public/dsp/psg.dsp).
- * Tracks its own paramValues so encoder cycling can be relative to the
- * current osc1_wave value. Exposes:
- *   - setParam(name, value): set any DSP param directly (used by store)
- *   - analyser: AnalyserNode tapped on the output for the oscilloscope
- *   - onSlotInput: callback for hardware-driven slot input, set by App
- *     to bridge into the PSG store
+ * Hosts a Faust-compiled polyphonic AudioWorkletNode (see public/dsp/psg.dsp,
+ * declares [nvoices:16]). Faust allocates voices automatically on keyOn
+ * and reclaims them on keyOff / steal-oldest. Shared params (cutoff,
+ * drive, LFO etc.) propagate to every active voice via setParamValue.
+ *
+ * The post-engine chain ends with a WaveShaperNode running a soft tanh
+ * curve so big chord stacks roll off smoothly instead of hard-clipping
+ * the audio destination.
  */
 
 const PSG_DSP_URL = import.meta.env.BASE_URL + 'dsp/psg.dsp';
+const POLY_VOICES = 16;
 
-let generatorPromise: Promise<FaustMonoDspGenerator> | null = null;
+let generatorPromise: Promise<FaustPolyDspGenerator> | null = null;
 
-async function ensurePSGGenerator(): Promise<FaustMonoDspGenerator> {
+async function ensurePSGGenerator(): Promise<FaustPolyDspGenerator> {
   if (!generatorPromise) {
     generatorPromise = (async () => {
       const compiler = await getFaustCompiler();
       const dspSource = await fetch(PSG_DSP_URL).then((r) => r.text());
-      const gen = new FaustMonoDspGenerator();
+      const gen = new FaustPolyDspGenerator();
       const ok = await gen.compile(compiler, 'psg', dspSource, '-ftz 2');
       if (!ok) throw new Error('Faust failed to compile psg.dsp');
       return gen;
@@ -35,22 +37,38 @@ async function ensurePSGGenerator(): Promise<FaustMonoDspGenerator> {
   return generatorPromise;
 }
 
+/** Build a soft tanh curve for WaveShaperNode. Single-voice signal stays
+ *  near-linear (tanh of small values ≈ x); summed voices soft-clip. */
+function buildSoftClipCurve(samples = 8192, drive = 0.6): Float32Array<ArrayBuffer> {
+  const curve = new Float32Array(samples);
+  for (let i = 0; i < samples; i++) {
+    const x = (i / (samples - 1)) * 2 - 1; // −1..+1
+    curve[i] = Math.tanh(x * drive * 3);
+  }
+  return curve;
+}
+
 export type SlotInputHandler = (name: PSGParamName, value: number) => void;
 
 export class PSGEngine implements Engine {
-  private node: FaustMonoAudioWorkletNode;
+  private node: FaustPolyAudioWorkletNode;
+  private saturator: WaveShaperNode;
   private gain: GainNode;
   readonly analyser: AnalyserNode;
-  private currentNote: number | null = null;
   private allParamPaths: string[];
   private pathCache = new Map<string, string>();
   private paramValues = new Map<string, number>();
-  /** Set by App.tsx to bridge hardware slot input into the PSG store. */
   onSlotInput: SlotInputHandler | null = null;
   readonly output: AudioNode;
 
-  private constructor(node: FaustMonoAudioWorkletNode, gain: GainNode, analyser: AnalyserNode) {
+  private constructor(
+    node: FaustPolyAudioWorkletNode,
+    saturator: WaveShaperNode,
+    gain: GainNode,
+    analyser: AnalyserNode
+  ) {
     this.node = node;
+    this.saturator = saturator;
     this.gain = gain;
     this.analyser = analyser;
     this.output = gain;
@@ -60,21 +78,30 @@ export class PSGEngine implements Engine {
 
   static async create(ctx: AudioContext): Promise<PSGEngine> {
     const gen = await ensurePSGGenerator();
-    const node = await gen.createNode(ctx);
-    if (!node) throw new Error('Faust failed to create PSG node');
+    const node = await gen.createNode(ctx, POLY_VOICES);
+    if (!node) throw new Error('Faust failed to create PSG poly node');
+
+    const saturator = ctx.createWaveShaper();
+    saturator.curve = buildSoftClipCurve();
+    saturator.oversample = '2x';
+
     const gain = ctx.createGain();
-    gain.gain.value = 0.5;
+    gain.gain.value = 0.8;
+
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 2048;
     analyser.smoothingTimeConstant = 0;
-    node.connect(gain);
+
+    node.connect(saturator);
+    saturator.connect(gain);
     gain.connect(analyser);
-    return new PSGEngine(node, gain, analyser);
+
+    return new PSGEngine(node, saturator, gain, analyser);
   }
 
   /**
-   * Set a DSP param by short name. Resolves the full Faust path lazily
-   * on first call. Public so the PSG store and devtools can drive it.
+   * Set a shared DSP param by short name. (freq, gain, gate are per-voice
+   * and handled via keyOn/keyOff, not this method.)
    */
   setParam(name: string, value: number): void {
     let path = this.pathCache.get(name);
@@ -93,19 +120,12 @@ export class PSGEngine implements Engine {
     this.node.setParamValue(path, value);
   }
 
-  noteOn(_channel: number, note: number, velocity: number): void {
-    this.currentNote = note;
-    const freq = 440 * Math.pow(2, (note - 69) / 12);
-    this.setParam('freq', freq);
-    this.setParam('gain', velocity / 127);
-    this.setParam('gate', 1);
+  noteOn(channel: number, note: number, velocity: number): void {
+    this.node.keyOn(channel, note, velocity);
   }
 
-  noteOff(_channel: number, note: number): void {
-    if (this.currentNote === note) {
-      this.currentNote = null;
-      this.setParam('gate', 0);
-    }
+  noteOff(channel: number, note: number): void {
+    this.node.keyOff(channel, note, 0);
   }
 
   pitchBend(_channel: number, value: number): void {
@@ -125,14 +145,14 @@ export class PSGEngine implements Engine {
   }
 
   panic(): void {
-    this.currentNote = null;
-    this.setParam('gate', 0);
+    this.node.allNotesOff(true);
   }
 
   destroy(): void {
     this.panic();
     setTimeout(() => {
       try { this.node.disconnect(); } catch { /* */ }
+      try { this.saturator.disconnect(); } catch { /* */ }
       try { this.gain.disconnect(); } catch { /* */ }
       try { this.analyser.disconnect(); } catch { /* */ }
     }, 100);

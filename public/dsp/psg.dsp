@@ -1,7 +1,8 @@
 declare name "psg";
 declare author "Synthehol";
-declare version "0.2";
-declare description "Mono PSG synth — M4: 2 osc + shape morph + filter + drive + LFO + ADSR. Sync still a no-op.";
+declare version "0.3";
+declare description "Polyphonic PSG synth: 2 osc + shape morph + filter + drive + LFO + ADSR.";
+declare options "[nvoices:16]";
 
 import("stdfaust.lib");
 

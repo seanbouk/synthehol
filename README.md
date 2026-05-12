@@ -121,7 +121,7 @@ EQ, delay, reverb, compressor, limiter — your global "this is how I sound" or 
 
 ## Instrument: PSG (in development)
 
-A monophonic synth inspired by classic PSG (Programmable Sound Generator) chips. Clean engine — not an emulator — that can produce NES, Gameboy, C64, and Master System -style voices alongside modern synth tones. Monophonic note response is intentional; routing one device to multiple tabs is how you get layering / polyphony when you want it.
+A polyphonic synth inspired by classic PSG (Programmable Sound Generator) chips. Clean engine — not an emulator — that can produce NES, Gameboy, C64, and Master System -style voices alongside modern synth tones.
 
 ### Signal chain
 
