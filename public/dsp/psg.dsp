@@ -1,7 +1,7 @@
 declare name "psg";
 declare author "Synthehol";
 declare version "0.3";
-declare description "Polyphonic PSG synth: 2 osc + shape morph + filter + drive + LFO + ADSR.";
+declare description "Polyphonic PSG synth: 2 osc + shape morph + sync + ring + filter + drive + LFO + ADSR.";
 declare options "[nvoices:16]";
 
 import("stdfaust.lib");
@@ -31,8 +31,8 @@ osc2_detune = hslider("osc2_detune",    5, -50, 50, 0.1);  // cents
 
 osc_mix     = hslider("osc_mix",        0.3, 0, 1, 0.01);
 
-sync_on     = checkbox("sync");   // toggled by UI; DSP wiring deferred
-ring_on     = checkbox("ring");
+sync_on     = checkbox("sync_on");
+ring_on     = checkbox("ring_on");
 
 drive_on    = hslider("drive_on",       0, 0, 1, 1);
 drive       = hslider("drive",          0, 0, 1, 0.01);
@@ -105,9 +105,10 @@ f2 = base_freq * pow(2.0, osc2_octave) * pow(2.0, osc2_detune_s / 1200.0);
 // ─── Shape-aware voice helpers ──────────────────────────────────────
 
 // Variable-skew ramp: skew=0 → reverse-saw, 0.5 → triangle, 1 → saw.
-ramp_voice(f, k) = 2.0 * y - 1.0
+ramp_voice(f, k) = ramp_from_phase(os.lf_sawpos(f), k);
+
+ramp_from_phase(ph, k) = 2.0 * y - 1.0
 with {
-    ph      = os.lf_sawpos(f);
     skew    = max(0.01, min(0.99, k));
     rising  = ph / skew;
     falling = (1.0 - ph) / (1.0 - skew);
@@ -119,14 +120,20 @@ with {
 //   k=0.5 → pure sine (no distortion)
 //   k=1   → second half compressed (other extreme)
 // Symmetric around 0.5 to match pulse and ramp morph behaviour.
-phase_distorted_sine(f, k) = sin(warped * 2.0 * ma.PI)
+phase_distorted_sine(f, k) = pd_sine_from_phase(os.lf_sawpos(f), k);
+
+pd_sine_from_phase(ph, k) = sin(warped * 2.0 * ma.PI)
 with {
-    ph     = os.lf_sawpos(f);
     t      = 0.05 + k * 0.9;             // 0.05 → 0.95 as k goes 0 → 1
     warped = select2(ph < t,
                      0.5 + (ph - t) * 0.5 / (1.0 - t),
                      ph * 0.5 / t);
 };
+
+// Pulse from an explicit phase ramp (no band-limiting; OK at OSC 2's
+// usual play range, used only when sync feeds OSC 2 a reset-capable
+// phase counter).
+pulse_from_phase(ph, k) = (ph < duty(k)) - 0.5;
 
 
 // ─── Oscillators ────────────────────────────────────────────────────
@@ -140,10 +147,22 @@ osc1 = ba.selectn(4, int(osc1_wave),
     phase_distorted_sine(f1, mod_shape),
     no.noise);
 
+// Hard sync: track OSC 1's phase via a parallel sawpos and detect each
+// wrap (current < previous). The trigger pulse resets OSC 2's manual
+// phase counter so OSC 2 re-runs from 0 every OSC 1 cycle, but keeps
+// the harmonic content of its own free-running frequency f2.
+osc1_phase_track = os.lf_sawpos(f1);
+osc1_wrap        = osc1_phase_track < osc1_phase_track';
+sync_trigger     = osc1_wrap * sync_on;
+
+// OSC 2 phase counter: increments by f2/SR per sample, wraps in [0, 1),
+// resets to 0 on sync_trigger.
+osc2_phase = (+(f2 / ma.SR) : ma.frac : *(1.0 - sync_trigger)) ~ _;
+
 osc2 = ba.selectn(5, int(osc2_wave),
-    pulse_voice(f2),
-    ramp_voice(f2, mod_shape),
-    phase_distorted_sine(f2, mod_shape),
+    pulse_from_phase(osc2_phase, mod_shape),
+    ramp_from_phase(osc2_phase, mod_shape),
+    pd_sine_from_phase(osc2_phase, mod_shape),
     no.noise,
     0.0);   // 4 = off
 
