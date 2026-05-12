@@ -94,15 +94,6 @@ function syncDevices(): void {
   }
 }
 
-/**
- * Called after AudioContext is created (from HomeTab's request button).
- * Retroactively sets up engines for devices that were detected before
- * audio was ready.
- */
-export function ensureEnginesForExistingDevices(): void {
-  syncDevices();
-}
-
 export function App() {
   useEffect(() => midiManager.subscribe(syncDevices), []);
   return <TabContainer />;

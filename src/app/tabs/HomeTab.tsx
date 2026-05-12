@@ -1,7 +1,6 @@
 import { useAppStore } from '../../state/app-store';
 import { midiManager } from '../../midi/access';
 import { resumeAudioContext } from '../../audio/context';
-import { ensureEnginesForExistingDevices } from '../App';
 
 export function HomeTab() {
   const midiReady = useAppStore((s) => s.midiReady);
@@ -13,12 +12,11 @@ export function HomeTab() {
   const requestAccess = async () => {
     try {
       // Resume audio first — the click is the user gesture browsers
-      // require to allow audio output.
+      // require to allow audio output. Then request MIDI; granting it
+      // fires midiManager.maybeNotify which runs syncDevices, by which
+      // time AudioContext exists so engines can be created.
       await resumeAudioContext();
       await midiManager.request();
-      // If devices were detected before audio was ready (rare, but
-      // possible on hot-replug), set their engines up now.
-      ensureEnginesForExistingDevices();
       setMidiReady(true);
       setMidiError(null);
     } catch (e) {
