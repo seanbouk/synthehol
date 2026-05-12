@@ -25,7 +25,7 @@ export function ADSRCurve({ attack, decay, sustain, release }: ADSRCurveProps) {
     canvas.height = HEIGHT * dpr;
     ctx.scale(dpr, dpr);
 
-    ctx.fillStyle = '#0a0c12';
+    ctx.fillStyle = '#100d0b';
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
     const total = attack + decay + SUSTAIN_DURATION + release;
@@ -33,7 +33,7 @@ export function ADSRCurve({ attack, decay, sustain, release }: ADSRCurveProps) {
     const yAt = (v: number) => HEIGHT - 8 - v * (HEIGHT - 16);
 
     // Grid baseline
-    ctx.strokeStyle = '#2a2f3d';
+    ctx.strokeStyle = '#322c28';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, yAt(0));
@@ -42,7 +42,7 @@ export function ADSRCurve({ attack, decay, sustain, release }: ADSRCurveProps) {
 
     // Stage boundaries (faint verticals)
     const boundaries = [attack, attack + decay, attack + decay + SUSTAIN_DURATION];
-    ctx.strokeStyle = '#1a1d27';
+    ctx.strokeStyle = '#1f1b18';
     ctx.beginPath();
     for (const t of boundaries) {
       ctx.moveTo(xAt(t), 0);
@@ -51,7 +51,7 @@ export function ADSRCurve({ attack, decay, sustain, release }: ADSRCurveProps) {
     ctx.stroke();
 
     // Envelope path
-    ctx.strokeStyle = '#6ee7b7';
+    ctx.strokeStyle = '#a78bfa';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(xAt(0), yAt(0));
@@ -62,7 +62,7 @@ export function ADSRCurve({ attack, decay, sustain, release }: ADSRCurveProps) {
     ctx.stroke();
 
     // Subtle fill
-    ctx.fillStyle = 'rgba(110, 231, 183, 0.08)';
+    ctx.fillStyle = 'rgba(167, 139, 250, 0.08)';
     ctx.lineTo(xAt(total), yAt(0));
     ctx.lineTo(xAt(0), yAt(0));
     ctx.fill();

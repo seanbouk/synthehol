@@ -1,10 +1,14 @@
 :root {
-  --bg: #0f1117;
-  --panel: #1a1d27;
-  --border: #2a2f3d;
-  --text: #e6e8ee;
-  --muted: #8b92a5;
-  --accent: #6ee7b7;
+  --bg: #14110f;
+  --panel: #1f1b18;
+  --canvas: #100d0b;
+  --border: #322c28;
+  --text: #ece5dd;
+  --muted: #a09289;
+  --disabled-strong: #4d433d;
+  --disabled-soft: #6b5e54;
+  --accent: #a78bfa;
+  --accent-soft: rgba(167, 139, 250, 0.08);
   --warn: #fbbf24;
   --error: #f87171;
   --note: #60a5fa;
@@ -26,7 +30,7 @@ body {
 
 button {
   background: var(--accent);
-  color: #0f1117;
+  color: var(--bg);
   border: 0;
   padding: 10px 16px;
   border-radius: 6px;
@@ -55,7 +59,7 @@ button.secondary:hover { border-color: var(--muted); }
   flex-wrap: wrap;
   gap: 4px;
   padding: 8px 12px;
-  background: #0a0c12;
+  background: var(--canvas);
   border-bottom: 1px solid var(--border);
 }
 
@@ -283,7 +287,7 @@ button.btn-seg:hover { color: var(--text); }
 
 button.btn-seg.active {
   background: var(--accent);
-  color: #0f1117;
+  color: var(--bg);
   font-weight: 600;
 }
 
@@ -291,7 +295,7 @@ button.btn-seg:disabled,
 button.btn-seg.active:disabled {
   cursor: not-allowed;
   background: transparent;
-  color: #404552;
+  color: var(--disabled-strong);
 }
 
 .knob.disabled .knob-label,
@@ -299,7 +303,7 @@ button.btn-seg.active:disabled {
 .slider.disabled .slider-label,
 .slider.disabled .slider-value,
 .button-group.disabled .button-group-label {
-  color: #5b6072;
+  color: var(--disabled-soft);
 }
 
 .slider.disabled input[type="range"] {

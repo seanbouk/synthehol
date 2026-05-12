@@ -96,11 +96,11 @@ export function WaveformPreview({
     canvas.height = HEIGHT * dpr;
     ctx.scale(dpr, dpr);
 
-    ctx.fillStyle = '#0a0c12';
+    ctx.fillStyle = '#100d0b';
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
     // Zero line
-    ctx.strokeStyle = '#2a2f3d';
+    ctx.strokeStyle = '#322c28';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, HEIGHT / 2);
@@ -124,7 +124,7 @@ export function WaveformPreview({
     const effectiveMix = osc2Off ? 0 : osc_mix;
     const effectiveRing = osc2Off ? 0 : ring_on;
 
-    ctx.strokeStyle = '#6ee7b7';
+    ctx.strokeStyle = '#a78bfa';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (let x = 0; x < WIDTH; x++) {

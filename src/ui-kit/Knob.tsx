@@ -55,7 +55,7 @@ export function Knob({ label, value, min, max, log = false, step, format, disabl
     const cy = SIZE / 2;
 
     // Background arc
-    ctx.strokeStyle = disabled ? '#1a1d27' : '#2a2f3d';
+    ctx.strokeStyle = disabled ? '#1f1b18' : '#322c28';
     ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.beginPath();
@@ -65,7 +65,7 @@ export function Knob({ label, value, min, max, log = false, step, format, disabl
     // Value arc
     const t = toNormalized(value, min, max, log);
     const angle = ARC_START + t * (ARC_END - ARC_START);
-    ctx.strokeStyle = disabled ? '#404552' : '#6ee7b7';
+    ctx.strokeStyle = disabled ? '#4d433d' : '#a78bfa';
     ctx.beginPath();
     ctx.arc(cx, cy, RADIUS, ARC_START, angle);
     ctx.stroke();
@@ -73,7 +73,7 @@ export function Knob({ label, value, min, max, log = false, step, format, disabl
     // Indicator line from centre
     const ix = cx + Math.cos(angle) * (RADIUS - 6);
     const iy = cy + Math.sin(angle) * (RADIUS - 6);
-    ctx.strokeStyle = disabled ? '#5b6072' : '#e6e8ee';
+    ctx.strokeStyle = disabled ? '#6b5e54' : '#ece5dd';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
