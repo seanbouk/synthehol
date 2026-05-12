@@ -6,7 +6,7 @@ import { decode } from '../midi/decode';
 import { profileFor } from '../midi/device-profile';
 import { classifyPort } from '../midi/port-filter';
 import { getAudioContext } from '../audio/context';
-import { SineEngine } from '../audio/sine-engine';
+import { PSGEngine } from '../audio/psg-engine';
 import { engineRegistry } from '../audio/engine-registry';
 import { dispatchToEngine } from '../audio/dispatch-to-engine';
 import { TabContainer } from './shell/TabContainer';
@@ -26,7 +26,7 @@ async function setupEngineFor(
   profile: ReturnType<typeof profileFor>
 ): Promise<void> {
   if (engineRegistry.has(deviceId)) return;
-  const engine = await SineEngine.create(ctx);
+  const engine = await PSGEngine.create(ctx);
   // Device may have disconnected during the async setup.
   if (!midiManager.inputs.some((i) => i.id === deviceId)) {
     engine.destroy();

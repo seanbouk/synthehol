@@ -24,8 +24,9 @@ export function DeviceTab({ deviceId }: { deviceId: string }) {
 
       <h3>Instrument</h3>
       <p>
-        Stub <strong>sine</strong> engine (mono, last-note-wins). Play notes on the
-        keyboard to hear it. PSG synth arrives in M3.
+        <strong>PSG</strong> (mono, last-note-wins). Faust-compiled DSP. M3 phase 1
+        — 1 oscillator, 4 waveforms (pulse / ramp / sine / noise), fixed ADSR.
+        Controls land in M4 / M5; for now the keyboard plays it on triangle.
       </p>
 
       <button className="secondary" onClick={panic}>Panic</button>
