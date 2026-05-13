@@ -18,7 +18,9 @@ interface SliderProps {
   onChange: (v: number) => void;
 }
 
-const TRACK_W = 26;
+const TRACK_W = 10;            // narrow track
+const CAP_W = 32;              // wider than the track — cap protrudes either side
+const CAP_EXTEND = (CAP_W - TRACK_W) / 2;   // 11
 const DEFAULT_TRACK_H = 210;
 const CAP_H = 18;
 
@@ -114,7 +116,11 @@ export function Slider({
   }
 
   return (
-    <div className={disabled ? 'vslider disabled' : 'vslider'}>
+    <div
+      className={disabled ? 'vslider disabled' : 'vslider'}
+      style={{ width: TRACK_W, height: TRACK_H }}
+    >
+      <div className="vslider-label">{label}</div>
       <div
         className="vslider-track"
         style={{ width: TRACK_W, height: TRACK_H }}
@@ -128,9 +134,16 @@ export function Slider({
           className="vslider-fill"
           style={{ top: fillTop, height: fillH }}
         />
-        <div className="vslider-cap" style={{ top: capTop, height: CAP_H }} />
+        <div
+          className="vslider-cap"
+          style={{
+            top: capTop,
+            height: CAP_H,
+            left: -CAP_EXTEND,
+            right: -CAP_EXTEND
+          }}
+        />
       </div>
-      <div className="vslider-label">{label}</div>
       <div className="vslider-value">{format ? format(value) : value.toFixed(2)}</div>
     </div>
   );

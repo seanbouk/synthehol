@@ -527,13 +527,17 @@ button.led-toggle:disabled .led {
   color: var(--text);
 }
 
-/* ─── VSlider (vertical, with gradient + ticks + cap) ────────────── */
-
+/* ─── VSlider (vertical, with gradient track + protruding cap) ───── */
+/*
+ * Wrapper is sized to the track only (narrow). The cap is wider than
+ * the track and sticks out either side via negative left/right (set
+ * inline from JS to match the JS-side CAP_W). Label sits above and
+ * value below the track, both absolutely positioned to match the
+ * knob style.
+ */
 .vslider {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
+  position: relative;
+  display: block;
   user-select: none;
 }
 
@@ -542,9 +546,7 @@ button.led-toggle:disabled .led {
   background: linear-gradient(
     to right,
     #0d0a08 0%,
-    #1f1b18 25%,
-    #2a2622 50%,
-    #1f1b18 75%,
+    #1f1b18 50%,
     #0d0a08 100%
   );
   border: 1px solid var(--border);
@@ -556,36 +558,45 @@ button.led-toggle:disabled .led {
 /* The lit portion of the track (purple, partially transparent). */
 .vslider-fill {
   position: absolute;
-  left: 5px;
-  right: 5px;
+  left: 2px;
+  right: 2px;
   background: var(--accent);
   border-radius: 2px;
   opacity: 0.4;
   pointer-events: none;
 }
 
-/* The cap (handle) that slides up and down. */
+/* The cap (handle). Its left/right are set inline so it stays wider
+   than the narrow track and protrudes either side. */
 .vslider-cap {
   position: absolute;
-  left: -3px;
-  right: -3px;
   background: var(--text);
   border-radius: 3px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   pointer-events: none;
 }
 
+.vslider-label,
+.vslider-value {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .vslider-label {
+  bottom: 100%;
+  margin-bottom: 3px;
   font-size: 11px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-
 .vslider-value {
+  top: 100%;
+  margin-top: 3px;
   font-size: 11px;
   color: var(--text);
-  font-variant-numeric: tabular-nums;
 }
 
 /* Disabled state */
