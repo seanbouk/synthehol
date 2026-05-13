@@ -207,7 +207,11 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
               warn
               onChange={(v) => set('drive_on', v)}
             />
+            {/* Empty label reserves the same vertical slot as LFO's
+                "Destination" label so the Soft/Fold radios line up
+                with the LFO destination radios. */}
             <ButtonGroup
+              label=""
               value={params.drive_type}
               options={DRIVE_OPTIONS}
               disabled={!params.drive_on}
@@ -224,6 +228,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
               onChange={(v) => set('filter_on', v)}
             />
             <ButtonGroup
+              label=""
               value={params.filter_mode}
               options={FILTER_OPTIONS}
               disabled={!params.filter_on}

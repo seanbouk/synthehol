@@ -325,21 +325,40 @@ code {
 
 /* The OSC zone is internally split into two columns by a partial
    vertical rule (see RULES in layout.ts) that sits half-way across
-   the zone (body-x = 720). The left column holds OSC 1 only; the
-   right stacks the OSC 2 power switch, OSC 2 wave radios, octave,
-   and the sync/ring LED row. */
+   the zone (body-x = 720). */
 .osc-columns {
   display: flex;
   height: 100%;
 }
+
+/* Left column — OSC 1 only. The group's right edge lines up with the
+   right of column 4 (body-x = 640); padding-top pushes it down to
+   match the OSC 2 wave group in the right column (which sits below
+   the power switch). */
 .osc-col-left {
   width: 372px;                 /* up to body-x=720, the partial rule */
+  padding-top: 50px;            /* power-row height + column gap */
+  padding-right: 80px;          /* group right edge → body-x = 640 */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;        /* right-align the OSC 1 group */
 }
+.osc-col-left .psg-labeled-group {
+  align-items: flex-end;        /* title + radios right-justified within the group */
+}
+
+/* Right column — OSC 2 power (centred), then OSC 2 wave / Octave /
+   Sync-Ring stacked. The labelled groups sit half a grid square in
+   from the partial rule; the power switch stays centred in the
+   column so it isn't pushed off centre by that margin. */
 .osc-col-right {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+.osc-col-right > .psg-labeled-group {
+  margin-left: 80px;            /* half a grid square in from the rule */
 }
 
 /* OSC 2 power switch sits as its own row, centred in the right
@@ -586,6 +605,8 @@ button.led-toggle:disabled .led {
 
 .button-group-label {
   font-size: 11px;
+  line-height: 1.4;
+  min-height: 1.4em;            /* keep height when label is empty (used as a spacer to align radios across groups) */
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;

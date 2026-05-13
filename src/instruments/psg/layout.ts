@@ -33,7 +33,7 @@
  *       rate   c13 | c14
  */
 
-import { cellCentre, cellRect, colLeft, colRight, rowTop, rowBottom } from './grid';
+import { CELL, cellCentre, cellRect, colLeft, colRight, rowTop, rowBottom } from './grid';
 
 // ──────────────────────────────────────────────────────────────────
 // Zone cell rectangles (in body coords).
@@ -134,14 +134,16 @@ export const KNOBS = {
 } as const;
 
 // ──────────────────────────────────────────────────────────────────
-// Vsliders — sit on column boundaries, 2 cells tall (rows 2–3).
+// Vsliders — sit on column boundaries, 2 cells tall, shifted half
+// a grid square below the rows 2–3 band so they hang more under the
+// top-row knobs than over them.
 // ──────────────────────────────────────────────────────────────────
 
-/** Track span: top of row 2 to bottom of row 3 = 320 px. */
-export const VSLIDER_TOP = rowTop(2);            // 160
-export const VSLIDER_BOTTOM = rowBottom(3);      // 480
+const VSLIDER_OFFSET = CELL / 2;                 // 80 px — half a grid cell
+export const VSLIDER_TOP = rowTop(2) + VSLIDER_OFFSET;    // 240
+export const VSLIDER_BOTTOM = rowBottom(3) + VSLIDER_OFFSET; // 560
 export const VSLIDER_TRACK_HEIGHT = VSLIDER_BOTTOM - VSLIDER_TOP; // 320
-export const VSLIDER_CY = (VSLIDER_TOP + VSLIDER_BOTTOM) / 2;     // 320
+export const VSLIDER_CY = (VSLIDER_TOP + VSLIDER_BOTTOM) / 2;     // 400
 
 export const VSLIDERS = {
   mix:    colRight(3),  // 480
