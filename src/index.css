@@ -300,12 +300,14 @@ code {
   gap: 10px;
 }
 
-/* Labeled group — title above its control(s), used for the three OSC
-   radio groups and the sync/ring LED row (which has an empty label so
-   its vertical rhythm matches the labelled rows). */
+/* Labeled group — title above its control(s). Children are pinned to
+   the start of the cross-axis (left), so radio rows and LED toggles
+   keep their natural content width instead of stretching to fill the
+   column. */
 .psg-labeled-group {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 6px;
 }
 .psg-group-label {
@@ -322,21 +324,29 @@ code {
 }
 
 /* The OSC zone is internally split into two columns by a partial
-   vertical rule (see RULES in layout.ts). The left column holds OSC 1
-   only; the right column stacks OSC 2 power + wave, octave, and the
-   sync/ring LED row. Both columns share the same y rhythm. */
+   vertical rule (see RULES in layout.ts) that sits half-way across
+   the zone (body-x = 720). The left column holds OSC 1 only; the
+   right stacks the OSC 2 power switch, OSC 2 wave radios, octave,
+   and the sync/ring LED row. */
 .osc-columns {
   display: flex;
   height: 100%;
 }
 .osc-col-left {
-  width: 452px;                 /* up to the col-6 boundary (rule x) */
+  width: 372px;                 /* up to body-x=720, the partial rule */
 }
 .osc-col-right {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+/* OSC 2 power switch sits as its own row, centred in the right
+   column; the column gap above puts it 18 px below the top. */
+.osc-power-row {
+  display: flex;
+  justify-content: center;
 }
 
 /* ─── Voice screen container (label above canvas) ────────────────── */

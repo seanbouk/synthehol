@@ -148,14 +148,17 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
               </div>
             </div>
 
-            {/* Right half — OSC 2 power + wave, octave, sync/ring. */}
+            {/* Right half — OSC 2 power, wave, octave, sync/ring. */}
             <div className="osc-col-right">
-              <div className="psg-labeled-group">
+              <div className="osc-power-row">
                 <LEDToggle
                   label="OSC 2"
                   value={params.osc2_on}
                   onChange={(v) => set('osc2_on', v)}
                 />
+              </div>
+              <div className="psg-labeled-group">
+                <div className="psg-group-label">OSC 2</div>
                 <ButtonGroup
                   value={params.osc2_wave}
                   options={WAVE_OPTIONS}

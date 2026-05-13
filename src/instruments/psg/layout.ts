@@ -104,8 +104,14 @@ export const RULES: readonly Rule[] = [
   hRule(rowBottom(4), colLeft(3), colRight(14)),
 
   // Partial vertical, inside the OSC zone — separates OSC 1 (left) from
-  // OSC 2 (right). Drops about half-way down the OSC zone.
-  vRule(colLeft(6), rowTop(1), rowTop(1) + (rowBottom(4) - rowTop(1)) / 2)
+  // OSC 2 (right). Sits halfway across the OSC zone (its x falls between
+  // grid columns, which is fine — it's an intra-zone rule, not a section
+  // boundary). Drops about half-way down the OSC zone.
+  vRule(
+    (colLeft(3) + colRight(7)) / 2,          // OSC midpoint: 720
+    rowTop(1),
+    rowTop(1) + (rowBottom(4) - rowTop(1)) / 2
+  )
 ] as const;
 
 // ──────────────────────────────────────────────────────────────────
