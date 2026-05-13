@@ -84,8 +84,14 @@ button.secondary:hover { border-color: var(--muted); }
   flex: 1;
   overflow-y: auto;
   padding: 24px;
-  max-width: 1100px;
   width: 100%;
+}
+
+/* Wrapper for narrow non-instrument tabs (Home / Drums / Bass / Output)
+   that keeps their content centred and readable. Device tabs skip this
+   and use the full width for the PSG stage. */
+.tab-content-narrow {
+  max-width: 1100px;
   margin: 0 auto;
 }
 
@@ -137,10 +143,13 @@ code {
 
 /* ─── Device tab + PSG panel ────────────────────────────────────── */
 
+/* The device tab fills the full available height below the header so
+   the PSG stage can pick a large render size. */
 .device-tab {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  height: 100%;
 }
 
 .device-header {
@@ -148,52 +157,124 @@ code {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+  flex-shrink: 0;
 }
 
 .device-header h2 { margin-bottom: 4px; }
 .device-header p { margin: 0; font-size: 12px; }
 
-.psg-panel {
+.device-stage-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ─── PSG Stage: 2200×800 fixed surface, uniform CSS scale to fit ── */
+
+.psg-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.psg-section {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.psg-section h3 {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  margin: 0 0 12px;
-  font-weight: 600;
-}
-
-.psg-section-header {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  justify-content: center;
+  overflow: hidden;
 }
 
-.psg-section-header h3 {
-  margin: 0;
+.psg-stage-inner {
+  width: 2200px;
+  height: 800px;
+  flex-shrink: 0;
+  transform-origin: center;
+  position: relative;
 }
+
+/* Body area inside the stage — matches the design's 32 / 21 padding. */
+.psg-body {
+  position: absolute;
+  top: 21px;
+  left: 32px;
+  width: 2136px;
+  height: 757px;
+}
+
+/* Each zone is absolutely placed inside .psg-body. */
+.psg-zone {
+  position: absolute;
+}
+
+.psg-zone.perf  { left: 0;     top: 0;   width: 187px;  height: 757px; }
+.psg-zone.osc   { left: 203px; top: 0;   width: 827px;  height: 507px; }
+.psg-zone.drive { left: 1045px; top: 0;  width: 213px;  height: 507px; }
+.psg-zone.filt  { left: 1275px; top: 0;  width: 373px;  height: 507px; }
+.psg-zone.lfo   { left: 1664px; top: 0;  width: 472px;  height: 507px; }
+.psg-zone.vox   { left: 203px; top: 523px; width: 652px; height: 234px; }
+.psg-zone.env   { left: 871px; top: 523px; width: 1265px; height: 234px; }
+
+/* ─── Fieldset: bordered panel with a title that breaks the border ─ */
+
+.psg-field {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.psg-field-title {
+  position: absolute;
+  top: -11px;
+  left: 24px;
+  padding: 0 10px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.psg-field-body {
+  position: absolute;
+  inset: 24px 18px 18px 18px;
+}
+
+/* ─── Layout helpers inside zones ────────────────────────────────── */
 
 .psg-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 .psg-row:last-child { margin-bottom: 0; }
+.psg-row .sub-label {
+  font-size: 13px;
+  color: var(--muted);
+  min-width: 70px;
+}
+
+.psg-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ─── Voice screen container (label above canvas) ────────────────── */
+
+.psg-voice-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.psg-voice-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
 
 /* ─── Knob ───────────────────────────────────────────────────────── */
 

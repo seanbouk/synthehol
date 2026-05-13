@@ -26,7 +26,7 @@ export function HomeTab() {
   };
 
   return (
-    <div className="panel">
+    <div className="tab-content-narrow panel">
       <h2>Home</h2>
 
       {!midiReady && (

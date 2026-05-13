@@ -28,7 +28,9 @@ export function DeviceTab({ deviceId }: { deviceId: string }) {
         <button className="secondary" onClick={panic}>Panic</button>
       </div>
 
-      <PSGPanel deviceId={deviceId} />
+      <div className="device-stage-wrap">
+        <PSGPanel deviceId={deviceId} />
+      </div>
     </div>
   );
 }

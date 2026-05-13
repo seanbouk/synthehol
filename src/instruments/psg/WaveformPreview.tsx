@@ -1,12 +1,15 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Static preview of the voice's waveform — *not* the live audio.
- * Computes the OSC1 + OSC2 mix (with ring mod) over a fixed time window,
- * using the same shape math as psg.dsp. Drive and filter are not applied
- * — the goal is to show the voice's defining shape so the user can see
- * what they're sculpting as they move the shape knob, swap waveforms,
- * adjust the mix or detune OSC2.
+ * Static preview of one cycle of the voice's waveform — *not* the live
+ * audio. Computes the OSC1 + OSC2 mix (with ring mod + drive) using the
+ * same shape math as psg.dsp. Filter is omitted (it shapes spectrum
+ * over time, not per-cycle waveform).
+ *
+ * `phaseLead` (in OSC 1 cycles) offsets where the cycle is sampled
+ * from. Two previews with different leads let the user see OSC 2's
+ * detune drift accumulate against OSC 1 — at lead 0 they're aligned;
+ * at lead 8, with ±50¢ detune, OSC 2 has drifted ~86° from OSC 1.
  */
 
 interface WaveformPreviewProps {
@@ -15,34 +18,32 @@ interface WaveformPreviewProps {
   shape: number;
   osc_mix: number;
   osc2_octave: number;
-  osc2_detune: number;   // cents
+  osc2_detune: number; // cents
   ring_on: number;
   drive_on: number;
-  drive: number;         // 0..1
-  drive_type: number;    // 0 = soft, 1 = fold
+  drive: number;       // 0..1
+  drive_type: number;  // 0 = soft, 1 = fold
+  /** OSC 1 cycles to skip before sampling the rendered cycle. */
+  phaseLead?: number;
+  /** Optional caption rendered above the canvas. */
+  label?: string;
 }
 
-const WIDTH = 480;
-const HEIGHT = 120;
-const NUM_CYCLES = 2; // of OSC1; OSC2 may show more or fewer depending on tuning
+const WIDTH = 300;
+const HEIGHT = 180;
 
 function oscSample(phase: number, wave: number, shape: number): number {
-  // phase: 0..1
   switch (wave) {
     case 0: {
-      // Pulse — same math as DSP: (sawpos < duty) * 1.0 - 0.5
       const duty = Math.max(0.01, Math.min(0.99, shape));
       return (phase < duty ? 1 : 0) - 0.5;
     }
     case 1: {
-      // Ramp — variable skew (rev-saw → triangle → saw)
       const skew = Math.max(0.01, Math.min(0.99, shape));
       const y = phase < skew ? phase / skew : (1 - phase) / (1 - skew);
       return 2 * y - 1;
     }
     case 2: {
-      // Sine — phase distortion (Casio CZ), symmetric around shape=0.5.
-      // shape=0.5 -> pure sine; edges compress the first or second half.
       const t = 0.05 + shape * 0.9;
       const warped = phase < t
         ? (phase * 0.5) / t
@@ -50,8 +51,6 @@ function oscSample(phase: number, wave: number, shape: number): number {
       return Math.sin(warped * 2 * Math.PI);
     }
     case 3: {
-      // Noise — pseudo-random but deterministic per phase so the
-      // preview doesn't flicker on every redraw.
       const s = Math.sin(phase * 12345.678) * 43758.5453;
       return (s - Math.floor(s)) * 2 - 1;
     }
@@ -60,14 +59,11 @@ function oscSample(phase: number, wave: number, shape: number): number {
   }
 }
 
-// Mirrors psg.dsp's drive section. Dry-blended so drive=0 is identity.
 function applyDrive(x: number, drive: number, type: number): number {
   if (drive <= 0) return x;
   if (type === 0) {
-    // Soft saturation (tanh)
     return x * (1 - drive) + Math.tanh(x * (1 + drive * 4)) * drive;
   }
-  // Wave fold (sine fold)
   return x * (1 - drive) + Math.sin(x * (1 + drive * 6) * Math.PI * 0.5) * drive;
 }
 
@@ -81,7 +77,9 @@ export function WaveformPreview({
   ring_on,
   drive_on,
   drive,
-  drive_type
+  drive_type,
+  phaseLead = 0,
+  label
 }: WaveformPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -91,10 +89,13 @@ export function WaveformPreview({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
+    // Higher DPR multiplier so canvas stays crisp when the parent stage
+    // scales it up. 3× covers DPR=1 monitors at scale up to ~3, and
+    // DPR=2 monitors at scale up to ~1.5.
+    const dpr = Math.max(1, Math.min(3, (window.devicePixelRatio || 1) * 1.5));
     canvas.width = WIDTH * dpr;
     canvas.height = HEIGHT * dpr;
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.fillStyle = '#100d0b';
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
@@ -107,28 +108,17 @@ export function WaveformPreview({
     ctx.lineTo(WIDTH, HEIGHT / 2);
     ctx.stroke();
 
-    // Cycle boundary lines (where OSC1 starts a new cycle).
-    ctx.beginPath();
-    for (let c = 1; c < NUM_CYCLES; c++) {
-      const x = (c / NUM_CYCLES) * WIDTH;
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, HEIGHT);
-    }
-    ctx.stroke();
-
-    // OSC2 plays at this ratio of OSC1's frequency
     const osc2Ratio = Math.pow(2, osc2_octave) * Math.pow(2, osc2_detune / 1200);
-    // When OSC 2 is off (wave === 4), mix and ring collapse to zero so
-    // the preview shows pure OSC 1, matching the DSP behaviour.
     const osc2Off = osc2_wave === 4;
     const effectiveMix = osc2Off ? 0 : osc_mix;
     const effectiveRing = osc2Off ? 0 : ring_on;
 
     ctx.strokeStyle = '#a78bfa';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     for (let x = 0; x < WIDTH; x++) {
-      const t = (x / WIDTH) * NUM_CYCLES;     // OSC1 cycle count so far
+      // One full OSC 1 cycle across the canvas, offset by phaseLead cycles.
+      const t = phaseLead + x / WIDTH;
       const phase1 = t - Math.floor(t);
       const phase2Raw = t * osc2Ratio;
       const phase2 = phase2Raw - Math.floor(phase2Raw);
@@ -141,17 +131,21 @@ export function WaveformPreview({
         : o1 * (1 - effectiveMix) + o2 * effectiveMix;
       const sample = drive_on ? applyDrive(mixed, drive, drive_type) : mixed;
 
-      const y = HEIGHT / 2 - sample * (HEIGHT / 2 - 4);
+      const y = HEIGHT / 2 - sample * (HEIGHT / 2 - 6);
       if (x === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
-  }, [osc1_wave, osc2_wave, shape, osc_mix, osc2_octave, osc2_detune, ring_on, drive_on, drive, drive_type]);
+  }, [osc1_wave, osc2_wave, shape, osc_mix, osc2_octave, osc2_detune,
+      ring_on, drive_on, drive, drive_type, phaseLead]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ width: WIDTH, height: HEIGHT, borderRadius: 4, display: 'block' }}
-    />
+    <div className="psg-voice-screen">
+      {label && <div className="psg-voice-label">{label}</div>}
+      <canvas
+        ref={canvasRef}
+        style={{ width: WIDTH, height: HEIGHT, display: 'block', borderRadius: 4 }}
+      />
+    </div>
   );
 }
