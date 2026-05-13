@@ -58,6 +58,10 @@ export const KNOB_COLS = {
   c4: X_MIRROR + KNOB_HALF_OUTER  // 1421.375 — right half of Filter
 } as const;
 
+/** Filter Env-Amount knob — sits one full column step to the right of
+ *  Reso. Outside the main 4×2 grid; row 1 only. */
+export const ENV_AMT_X = KNOB_COLS.c4 + KNOB_COL_SPACING; // 1594.625
+
 /** Vertical half-gap between Y_MIRROR and a knob row centre.
  *  112.5 = 75 × 1.5 (original gap increased by 50%). */
 export const KNOB_ROW_HALF_GAP = 112.5;
@@ -111,20 +115,21 @@ export const LFO_CX = (LFO_LEFT + LFO_RIGHT) / 2;              // 1900
 // Vsliders — 4 sliders mirrored around X_MIRROR.
 // ──────────────────────────────────────────────────────────────────
 //
-// Rate sits a fixed inset from LFO's right edge; Depth is positioned so
-// that the midpoint of (Depth, Rate) lands exactly on LFO_CX. Mix and
-// Detune are then the mirror images of Rate and Depth around X_MIRROR,
-// which automatically lands them inside the Oscillators zone.
+// Depth and Rate sit symmetrically around LFO_CX. Mix and Detune are
+// the mirror images of Rate and Depth around X_MIRROR. Half-spacing
+// from LFO_CX = ((LFO_WIDTH/2 - inset)) — here picked so the gap
+// between Depth and Rate is ~1/3 less than at the previous step
+// (181.33 apart instead of 272).
 
-const VSLIDER_INSET = 100;
-const RATE_X = LFO_RIGHT - VSLIDER_INSET;       // 2036
-const DEPTH_X = 2 * LFO_CX - RATE_X;            // 1764  → (DEPTH+RATE)/2 = LFO_CX
+const VSLIDER_HALF_SPACING = 90.667;            // distance from LFO_CX to depth or rate
+const RATE_X = LFO_CX + VSLIDER_HALF_SPACING;   // 1990.667
+const DEPTH_X = LFO_CX - VSLIDER_HALF_SPACING;  // 1809.333
 
 export const VSLIDERS = {
-  mix:    2 * X_MIRROR - RATE_X,                // 287   — mirror of RATE
-  detune: 2 * X_MIRROR - DEPTH_X,               // 559   — mirror of DEPTH
-  depth:  DEPTH_X,                              // 1764
-  rate:   RATE_X                                // 2036
+  mix:    2 * X_MIRROR - RATE_X,                // 332.333 — mirror of RATE
+  detune: 2 * X_MIRROR - DEPTH_X,               // 513.667 — mirror of DEPTH
+  depth:  DEPTH_X,                              // 1809.333
+  rate:   RATE_X                                // 1990.667
 } as const;
 
 /** Single Y centre for all four vsliders. */
@@ -150,20 +155,21 @@ export const VOX_RIGHT = OSC_RIGHT;      // 980.25
 export const ENV_LEFT = DRIVE_LEFT;      // 996.25
 export const ENV_RIGHT = LFO_RIGHT;      // 2136
 
-/** Voice bbox is centred inside the vox zone. */
-const VOX_ZONE_CENTRE = (VOX_LEFT + VOX_RIGHT) / 2;                  // 591.625
-export const VOX_BBOX_LEFT = VOX_ZONE_CENTRE - VOX_BBOX_WIDTH / 2;   // 283.625
-export const VOX_BBOX_RIGHT = VOX_BBOX_LEFT + VOX_BBOX_WIDTH;         // 899.625
+/** Voice bbox — shifted 115px further from X_MIRROR than centred. */
+const VOX_ZONE_CENTRE = (VOX_LEFT + VOX_RIGHT) / 2;
+const CHART_PUSH_FROM_MIRROR = 115;
+export const VOX_BBOX_LEFT = VOX_ZONE_CENTRE - VOX_BBOX_WIDTH / 2 - CHART_PUSH_FROM_MIRROR;  // 168.625
+export const VOX_BBOX_RIGHT = VOX_BBOX_LEFT + VOX_BBOX_WIDTH;                                 // 784.625
 
-export const VOX_CHART_1_CX = VOX_BBOX_LEFT + VOX_CHART_WIDTH / 2;    // 433.625
-export const VOX_CHART_2_CX = VOX_BBOX_RIGHT - VOX_CHART_WIDTH / 2;   // 749.625
+export const VOX_CHART_1_CX = VOX_BBOX_LEFT + VOX_CHART_WIDTH / 2;    // 318.625
+export const VOX_CHART_2_CX = VOX_BBOX_RIGHT - VOX_CHART_WIDTH / 2;   // 634.625
 
 /** Env chart bbox is the mirror image of the voice bbox around X_MIRROR. */
-export const ENV_CHART_LEFT = 2 * X_MIRROR - VOX_BBOX_RIGHT;   // 1423.375
-export const ENV_CHART_RIGHT = 2 * X_MIRROR - VOX_BBOX_LEFT;   // 2039.375
+export const ENV_CHART_LEFT = 2 * X_MIRROR - VOX_BBOX_RIGHT;   // 1538.375
+export const ENV_CHART_RIGHT = 2 * X_MIRROR - VOX_BBOX_LEFT;   // 2154.375
 export const ENV_CHART_WIDTH = VOX_BBOX_WIDTH;                 // 616
 export const ENV_CHART_HEIGHT = VOX_CHART_HEIGHT;              // 180
-export const ENV_CHART_CX = (ENV_CHART_LEFT + ENV_CHART_RIGHT) / 2; // 1731.375
+export const ENV_CHART_CX = (ENV_CHART_LEFT + ENV_CHART_RIGHT) / 2; // 1846.375
 
 /** Y centre for voice and envelope charts (in body coords). */
 export const CHART_Y = 640;

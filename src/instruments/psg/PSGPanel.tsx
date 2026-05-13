@@ -11,7 +11,7 @@ import { WaveformPreview } from './WaveformPreview';
 import { ADSRCurve } from './ADSRCurve';
 import { Stage } from './Stage';
 import {
-  KNOB_COLS, KNOB_ROWS, VSLIDERS, VSLIDER_Y,
+  KNOB_COLS, KNOB_ROWS, ENV_AMT_X, VSLIDERS, VSLIDER_Y,
   VOX_CHART_1_CX, VOX_CHART_2_CX, ENV_CHART_CX, CHART_Y,
   ENV_CHART_WIDTH, ENV_CHART_HEIGHT
 } from './layout';
@@ -193,17 +193,17 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
         <div className="psg-zone drive">
           <Field title="Drive">
             <div className="psg-stack" style={{ alignItems: 'center' }}>
-              <ButtonGroup
-                value={params.drive_type}
-                options={DRIVE_OPTIONS}
-                disabled={!params.drive_on}
-                onChange={(v) => set('drive_type', v)}
-              />
               <LEDToggle
                 label="Drive"
                 value={params.drive_on}
                 warn
                 onChange={(v) => set('drive_on', v)}
+              />
+              <ButtonGroup
+                value={params.drive_type}
+                options={DRIVE_OPTIONS}
+                disabled={!params.drive_on}
+                onChange={(v) => set('drive_type', v)}
               />
             </div>
           </Field>
@@ -212,24 +212,16 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
         <div className="psg-zone filt">
           <Field title="Filter">
             <div className="psg-stack" style={{ alignItems: 'center' }}>
-              <Knob
-                label="Env amt"
-                value={params.filter_env_amount}
-                min={-1} max={1}
-                disabled={!params.filter_on}
-                onChange={(v) => set('filter_env_amount', v)}
-                format={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}`}
+              <LEDToggle
+                label="Filter"
+                value={params.filter_on}
+                onChange={(v) => set('filter_on', v)}
               />
               <ButtonGroup
                 value={params.filter_mode}
                 options={FILTER_OPTIONS}
                 disabled={!params.filter_on}
                 onChange={(v) => set('filter_mode', v)}
-              />
-              <LEDToggle
-                label="Filter"
-                value={params.filter_on}
-                onChange={(v) => set('filter_on', v)}
               />
             </div>
           </Field>
@@ -301,6 +293,18 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             disabled={!params.filter_on}
             onChange={(v) => set('resonance', v)}
             format={(v) => v.toFixed(2)}
+          />
+        </At>
+
+        {/* 9th knob — Filter Env Amount sits one column step right of Reso. */}
+        <At x={ENV_AMT_X} y={KNOB_ROWS.r1}>
+          <Knob
+            label="Env amt"
+            value={params.filter_env_amount}
+            min={-1} max={1}
+            disabled={!params.filter_on}
+            onChange={(v) => set('filter_env_amount', v)}
+            format={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}`}
           />
         </At>
 
