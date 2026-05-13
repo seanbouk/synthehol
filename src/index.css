@@ -297,7 +297,7 @@ code {
 .psg-stack {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 18px;                    /* matches .osc-col-right so Drive/Filter/LFO row heights align with OSC */
 }
 
 /* Labeled group — title above its control(s). Children are pinned to
@@ -600,11 +600,11 @@ button.led-toggle:disabled .led {
 .button-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;                     /* matches .psg-labeled-group so labelled radios line up across the panel */
 }
 
 .button-group-label {
-  font-size: 11px;
+  font-size: 13px;              /* matches .psg-group-label so the Drive/Filter/LFO label slot has the same height as OSC titles */
   line-height: 1.4;
   min-height: 1.4em;            /* keep height when label is empty (used as a spacer to align radios across groups) */
   color: var(--muted);
