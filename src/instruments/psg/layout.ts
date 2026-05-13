@@ -33,22 +33,17 @@
  *       rate   c13 | c14
  */
 
-import { cellCentre, cellRect, colRight, rowTop, rowBottom } from './grid';
+import { cellCentre, cellRect, colLeft, colRight, rowTop, rowBottom } from './grid';
 
 // ──────────────────────────────────────────────────────────────────
-// Zones — cell rectangles (in body coords).
+// Zone cell rectangles (in body coords).
 // ──────────────────────────────────────────────────────────────────
 //
-// Box-bearing zones are inset by ZONE_INSET on every edge that touches
-// another box (left/right/bottom of OSC, FILTER, etc.). Edges flush
-// with the outer synth panel (top of the upper row, the outermost
-// left/right/bottom) stay at their cell boundary. The CSS rules in
-// index.css apply these insets — these RECT exports remain the raw
-// cell rectangles so consumers reading "the OSC zone covers cells
-// 3..7" continue to see the truth.
-
-/** Visual gap inset per edge between adjacent box-bearing zones. */
-export const ZONE_INSET = 8;
+// Sections aren't framed anymore — each zone is just a logical region
+// of the grid that hosts controls. Visual separation between sections
+// comes from the thin RULES defined below, not from fieldset borders.
+// These rects are kept as a documentation/reference; runtime layout
+// CSS reads positions and sizes directly.
 
 export const PERF_RECT   = cellRect(1, 1, 2, 5);   //   0,   0, 320, 800
 export const OSC_RECT    = cellRect(3, 1, 7, 4);   // 320,   0, 800, 640
@@ -57,8 +52,57 @@ export const FILTER_RECT = cellRect(9, 1, 11, 4);  // 1280,  0, 480, 640
 export const LFO_RECT    = cellRect(12, 1, 14, 4); // 1760,  0, 480, 640
 export const ENVCTL_RECT = cellRect(7, 5, 10, 5);  // 960, 640, 640, 160
 
-// Voice charts and the envelope display are unboxed canvases; they
-// simply fill their cells in row 5. They have no zone wrapper.
+// Voice charts and the envelope display are unboxed canvases — they
+// fill their cells in row 5 with no zone wrapper.
+
+// ──────────────────────────────────────────────────────────────────
+// Section rules — thin teal lines between adjacent sections.
+// ──────────────────────────────────────────────────────────────────
+//
+// Each rule sits on a column or row boundary. Rules stop short of any
+// perpendicular rule (and of the panel edge) by RULE_INSET so they
+// never visually touch each other.
+
+/** Inset from any panel edge or perpendicular rule. */
+export const RULE_INSET = 12;
+
+type Rule = { x1: number; y1: number; x2: number; y2: number };
+
+const vRule = (x: number, top: number, bottom: number): Rule => ({
+  x1: x,
+  y1: top + RULE_INSET,
+  x2: x,
+  y2: bottom - RULE_INSET
+});
+
+const hRule = (y: number, left: number, right: number): Rule => ({
+  x1: left + RULE_INSET,
+  y1: y,
+  x2: right - RULE_INSET,
+  y2: y
+});
+
+/** All section-boundary rules, in render order. */
+export const RULES: readonly Rule[] = [
+  // Vertical — perf | osc, full panel height (passes through where the
+  // horizontal rule starts; H starts inset right of this column so they
+  // don't intersect).
+  vRule(colRight(2), rowTop(1), rowBottom(5)),
+
+  // Vertical — osc | drive | filter | lfo, top zones only (rows 1..4).
+  vRule(colRight(7),  rowTop(1), rowBottom(4)),
+  vRule(colRight(8),  rowTop(1), rowBottom(4)),
+  vRule(colRight(11), rowTop(1), rowBottom(4)),
+
+  // Vertical — row 5 only: voice screens | envelope controls | env display.
+  vRule(colRight(6),  rowTop(5), rowBottom(5)),
+  vRule(colRight(10), rowTop(5), rowBottom(5)),
+
+  // Horizontal — row 4 / row 5 boundary, spanning the right of perf to
+  // the right of lfo. Starts inset right of the perf|osc vertical so
+  // they don't meet at a corner.
+  hRule(rowBottom(4), colLeft(3), colRight(14))
+] as const;
 
 // ──────────────────────────────────────────────────────────────────
 // Knob positions — cell centres.

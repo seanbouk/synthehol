@@ -9,6 +9,9 @@
   --disabled-soft: #6b5e54;
   --accent: #a78bfa;
   --accent-soft: rgba(167, 139, 250, 0.08);
+  --screen: #f6a96b;        /* warm dusky orange — waveform / envelope strokes */
+  --screen-soft: rgba(246, 169, 107, 0.10);
+  --rule: #7dd3c0;          /* dusky teal — section-divider rules */
   --warn: #fbbf24;
   --error: #f87171;
   --note: #60a5fa;
@@ -199,54 +202,28 @@ code {
 }
 
 /* Each zone is absolutely placed inside .psg-body, aligned to grid
-   cells (see src/instruments/psg/layout.ts and refs/grid-sketch.svg). */
+   cells (see src/instruments/psg/layout.ts and refs/grid-sketch.svg).
+   Zones are unframed regions — section boundaries are drawn with the
+   .psg-rule lines, not with borders. */
 .psg-zone {
   position: absolute;
 }
 
 /* Underlying cell rectangles:
      Columns: 1=0   2=160  3=320  …  14=2080  (right edge = 2240)
-     Rows:    1=0   2=160  3=320  4=480  5=640 (bottom = 800)
+     Rows:    1=0   2=160  3=320  4=480  5=640 (bottom = 800) */
+.psg-zone.osc   { left: 320px;  top: 0;   width: 800px; height: 640px; padding: 24px 28px; } /* cells 3–7 / rows 1–4 */
+.psg-zone.drive { left: 1120px; top: 0;   width: 160px; height: 640px; padding: 24px 12px; } /* cell  8   / rows 1–4 */
+.psg-zone.filt  { left: 1280px; top: 0;   width: 480px; height: 640px; padding: 24px 28px; } /* cells 9–11/ rows 1–4 */
+.psg-zone.lfo   { left: 1760px; top: 0;   width: 480px; height: 640px; padding: 24px 28px; } /* cells 12–14/ rows 1–4 */
 
-   Each box-bearing zone is inset 8 px on every edge that touches
-   another box (= ZONE_INSET in layout.ts). Edges flush with the synth
-   panel's outer border stay on their cell boundary, so the gap only
-   appears between boxes, never as a strip around the panel. */
-.psg-zone.perf   { left: 0;     top: 0;     width: 320px; height: 800px; } /* cols 1–2 / rows 1–5 (no insets — wheels box is flush) */
-.psg-zone.osc    { left: 328px; top: 0;     width: 784px; height: 632px; } /* cells 3–7 / 1–4, inset L+R+B */
-.psg-zone.drive  { left: 1128px; top: 0;    width: 144px; height: 632px; } /* cell  8   / 1–4, inset L+R+B */
-.psg-zone.filt   { left: 1288px; top: 0;    width: 464px; height: 632px; } /* cells 9–11/ 1–4, inset L+R+B */
-.psg-zone.lfo    { left: 1768px; top: 0;    width: 472px; height: 640px; } /* cells 12–14/1–4, inset L only */
-.psg-zone.envctl { left: 960px; top: 648px; width: 640px; height: 152px; } /* cells 7–10 /5,   inset T only */
+/* ─── Section-divider rule (thin teal line on a column / row boundary) */
 
-/* ─── Fieldset: bordered panel with a title that breaks the border ─ */
-
-.psg-field {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  background: var(--panel);
-}
-
-.psg-field-title {
+.psg-rule {
   position: absolute;
-  top: -11px;
-  left: 24px;
-  padding: 0 10px;
-  background: var(--bg);
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  line-height: 1;
-}
-
-.psg-field-body {
-  position: absolute;
-  inset: 24px 18px 18px 18px;
+  background: var(--rule);
+  opacity: 0.55;
+  pointer-events: none;
 }
 
 /* ─── Layout helpers inside zones ────────────────────────────────── */
@@ -270,13 +247,11 @@ code {
   gap: 10px;
 }
 
-/* Inside the OSC fieldset every right-side control (the 3 wave/octave
-   radio groups and the sync/ring LED row) left-aligns to the left edge
-   of column 6 (body-x = 800). With OSC's left-edge 8 px inset and the
-   2 px border + 18 px field-body padding, that lands at 452 px inside
-   the field body. Sub-label min-width (440) + .psg-row gap (12) puts
-   the controls there; the sync/ring row uses an empty sub-label as a
-   spacer so it inherits the same alignment. */
+/* OSC right-side controls left-align to col 6's left edge (body-x =
+   800). With the zone at body-x=320 and a 28 px left padding, the row
+   content starts at body-x=348; an empty 440 px sub-label + 12 px row
+   gap pushes the controls to body-x=800. The sync/ring row uses an
+   empty sub-label as a spacer so it inherits the same alignment. */
 .psg-zone.osc .psg-row .sub-label {
   min-width: 440px;
 }
@@ -403,27 +378,41 @@ button.led-toggle:disabled .led {
 }
 
 /* ─── Knob ───────────────────────────────────────────────────────── */
-
+/*
+ * The .knob wrapper is exactly canvas-sized, so when an <At> centres
+ * the wrapper on a grid cell the canvas centre lands dead-centre too.
+ * Label and value float outside (above and below) via absolute
+ * positioning, so they don't shift the canvas off-centre.
+ */
 .knob {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 112px;
+  position: relative;
+  display: block;
   user-select: none;
 }
 
+.knob-label,
+.knob-value {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 .knob-label {
+  bottom: 100%;
+  margin-bottom: 8px;
   font-size: 13px;
   color: var(--muted);
-  margin-top: 6px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .knob-value {
+  top: 100%;
+  margin-top: 8px;
   font-size: 12px;
   color: var(--text);
-  font-variant-numeric: tabular-nums;
 }
 
 /* ─── VSlider (vertical, with gradient + ticks + cap) ────────────── */

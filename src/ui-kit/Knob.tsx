@@ -119,12 +119,17 @@ export function Knob({ label, value, min, max, log = false, step, format, disabl
   }, [min, max, log, step, onChange]);
 
   return (
-    <div className={disabled ? 'knob disabled' : 'knob'}>
+    <div
+      className={disabled ? 'knob disabled' : 'knob'}
+      style={{ width: SIZE, height: SIZE }}
+    >
+      <div className="knob-label">{label}</div>
       <canvas
         ref={canvasRef}
         style={{
           width: SIZE,
           height: SIZE,
+          display: 'block',
           cursor: disabled ? 'not-allowed' : 'ns-resize'
         }}
         onPointerDown={onPointerDown}
@@ -133,7 +138,6 @@ export function Knob({ label, value, min, max, log = false, step, format, disabl
         onPointerCancel={onPointerUp}
         onDoubleClick={disabled ? undefined : onDoubleClick}
       />
-      <div className="knob-label">{label}</div>
       <div className="knob-value">{format ? format(value) : value.toFixed(2)}</div>
     </div>
   );

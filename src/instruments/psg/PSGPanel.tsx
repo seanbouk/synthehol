@@ -15,7 +15,8 @@ import {
   KNOBS,
   VSLIDERS, VSLIDER_CY, VSLIDER_TRACK_HEIGHT,
   VOX_CHART_1, VOX_CHART_2, VOX_CHART_WIDTH, VOX_CHART_HEIGHT,
-  ENV_CHART, ENV_CHART_WIDTH, ENV_CHART_HEIGHT
+  ENV_CHART, ENV_CHART_WIDTH, ENV_CHART_HEIGHT,
+  RULES
 } from './layout';
 
 const PITCH_WHEEL = cellCentre(1, 3); // col 1 centre, vertical mid of body
@@ -24,13 +25,15 @@ const MOD_WHEEL   = cellCentre(2, 3); // col 2 centre, vertical mid of body
 /**
  * PSG instrument panel.
  *
- * The fixed 2240×800 Stage is a 14×5 grid of 160 px square cells. Each
- * fieldset zone (perf / osc / drive / filter / lfo / vox / env) sits in
- * an exact cell rectangle, and free-floating controls (knobs, vsliders,
- * charts) anchor to cell centres or column boundaries.
+ * The fixed 2240×800 Stage is a 14×5 grid of 160 px square cells. There
+ * are no fieldset boxes — section boundaries are drawn as thin teal
+ * rules between cells (see RULES in layout.ts). Controls anchor to cell
+ * centres or column boundaries; multi-control sections (osc/drive/
+ * filter/lfo) live inside an unframed .psg-zone wrapper that lays out
+ * their internal flex content.
  *
  * See `grid.ts`, `layout.ts`, and `refs/grid-sketch.svg` for the full
- * layout — this file just wires the positions to the controls.
+ * layout — this file just wires positions to controls.
  */
 
 const OSC1_WAVE_OPTIONS = [
@@ -77,15 +80,6 @@ function fmtCents(v: number): string {
   return `${v >= 0 ? '+' : ''}${v.toFixed(0)} ¢`;
 }
 
-function Field({ title, children }: { title: string; children?: ReactNode }) {
-  return (
-    <div className="psg-field">
-      <div className="psg-field-title">{title}</div>
-      <div className="psg-field-body">{children}</div>
-    </div>
-  );
-}
-
 /** Absolute-position helper. (x, y) anchors to the child's centre. */
 function At({ x, y, children }: { x: number; y: number; children: ReactNode }) {
   return (
@@ -122,118 +116,118 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
     <Stage>
       <div className="psg-body">
 
-        {/* ── Zones: fieldsets with internal (non-grid) content ─────── */}
+        {/* ── Thin teal section rules (replace fieldset borders) ─────── */}
 
-        <div className="psg-zone perf">
-          <Field title="Wheels" />
-        </div>
+        {RULES.map((r, i) => {
+          const left = Math.min(r.x1, r.x2);
+          const top = Math.min(r.y1, r.y2);
+          const width = Math.max(1, r.x2 - r.x1);
+          const height = Math.max(1, r.y2 - r.y1);
+          return (
+            <div
+              key={i}
+              className="psg-rule"
+              style={{ left, top, width, height }}
+            />
+          );
+        })}
+
+        {/* ── Multi-control zones (unframed, just hold flex content) ── */}
 
         <div className="psg-zone osc">
-          <Field title="Oscillators">
-            <div className="psg-stack">
-              <div className="psg-row">
-                <span className="sub-label">OSC 1</span>
-                <ButtonGroup
-                  value={params.osc1_wave}
-                  options={OSC1_WAVE_OPTIONS}
-                  onChange={(v) => set('osc1_wave', v)}
-                />
-              </div>
-              <div className="psg-row">
-                <span className="sub-label">OSC 2</span>
-                <ButtonGroup
-                  value={params.osc2_wave}
-                  options={OSC2_WAVE_OPTIONS}
-                  onChange={(v) => set('osc2_wave', v)}
-                />
-              </div>
-              <div className="psg-row">
-                <span className="sub-label">Octave</span>
-                <ButtonGroup
-                  value={params.osc2_octave}
-                  options={OCTAVE_OPTIONS}
-                  disabled={osc2Off}
-                  onChange={(v) => set('osc2_octave', v)}
-                />
-              </div>
-              <div className="psg-row">
-                <span className="sub-label" />
-                <LEDToggle
-                  label="Sync"
-                  value={params.sync_on}
-                  disabled={osc2Off}
-                  onChange={(v) => set('sync_on', v)}
-                />
-                <LEDToggle
-                  label="Ring"
-                  value={params.ring_on}
-                  warn
-                  disabled={osc2Off}
-                  onChange={(v) => set('ring_on', v)}
-                />
-              </div>
+          <div className="psg-stack">
+            <div className="psg-row">
+              <span className="sub-label">OSC 1</span>
+              <ButtonGroup
+                value={params.osc1_wave}
+                options={OSC1_WAVE_OPTIONS}
+                onChange={(v) => set('osc1_wave', v)}
+              />
             </div>
-          </Field>
+            <div className="psg-row">
+              <span className="sub-label">OSC 2</span>
+              <ButtonGroup
+                value={params.osc2_wave}
+                options={OSC2_WAVE_OPTIONS}
+                onChange={(v) => set('osc2_wave', v)}
+              />
+            </div>
+            <div className="psg-row">
+              <span className="sub-label">Octave</span>
+              <ButtonGroup
+                value={params.osc2_octave}
+                options={OCTAVE_OPTIONS}
+                disabled={osc2Off}
+                onChange={(v) => set('osc2_octave', v)}
+              />
+            </div>
+            <div className="psg-row">
+              <span className="sub-label" />
+              <LEDToggle
+                label="Sync"
+                value={params.sync_on}
+                disabled={osc2Off}
+                onChange={(v) => set('sync_on', v)}
+              />
+              <LEDToggle
+                label="Ring"
+                value={params.ring_on}
+                warn
+                disabled={osc2Off}
+                onChange={(v) => set('ring_on', v)}
+              />
+            </div>
+          </div>
         </div>
 
         <div className="psg-zone drive">
-          <Field title="Drive">
-            <div className="psg-stack" style={{ alignItems: 'center' }}>
-              <LEDToggle
-                label="Drive"
-                value={params.drive_on}
-                warn
-                onChange={(v) => set('drive_on', v)}
-              />
-              <ButtonGroup
-                value={params.drive_type}
-                options={DRIVE_OPTIONS}
-                disabled={!params.drive_on}
-                onChange={(v) => set('drive_type', v)}
-              />
-            </div>
-          </Field>
+          <div className="psg-stack" style={{ alignItems: 'center' }}>
+            <LEDToggle
+              label="Drive"
+              value={params.drive_on}
+              warn
+              onChange={(v) => set('drive_on', v)}
+            />
+            <ButtonGroup
+              value={params.drive_type}
+              options={DRIVE_OPTIONS}
+              disabled={!params.drive_on}
+              onChange={(v) => set('drive_type', v)}
+            />
+          </div>
         </div>
 
         <div className="psg-zone filt">
-          <Field title="Filter">
-            <div className="psg-stack" style={{ alignItems: 'center' }}>
-              <LEDToggle
-                label="Filter"
-                value={params.filter_on}
-                onChange={(v) => set('filter_on', v)}
-              />
-              <ButtonGroup
-                value={params.filter_mode}
-                options={FILTER_OPTIONS}
-                disabled={!params.filter_on}
-                onChange={(v) => set('filter_mode', v)}
-              />
-            </div>
-          </Field>
+          <div className="psg-stack" style={{ alignItems: 'center' }}>
+            <LEDToggle
+              label="Filter"
+              value={params.filter_on}
+              onChange={(v) => set('filter_on', v)}
+            />
+            <ButtonGroup
+              value={params.filter_mode}
+              options={FILTER_OPTIONS}
+              disabled={!params.filter_on}
+              onChange={(v) => set('filter_mode', v)}
+            />
+          </div>
         </div>
 
         <div className="psg-zone lfo">
-          <Field title="LFO">
-            <div className="psg-stack" style={{ alignItems: 'center' }}>
-              <LEDToggle
-                label="LFO"
-                value={params.lfo_on}
-                onChange={(v) => set('lfo_on', v)}
-              />
-              <ButtonGroup
-                label="Destination"
-                value={params.lfo_dest}
-                options={LFO_DEST_OPTIONS}
-                disabled={!params.lfo_on}
-                onChange={(v) => set('lfo_dest', v)}
-              />
-            </div>
-          </Field>
-        </div>
-
-        <div className="psg-zone envctl">
-          <Field title="Envelope" />
+          <div className="psg-stack" style={{ alignItems: 'center' }}>
+            <LEDToggle
+              label="LFO"
+              value={params.lfo_on}
+              onChange={(v) => set('lfo_on', v)}
+            />
+            <ButtonGroup
+              label="Destination"
+              value={params.lfo_dest}
+              options={LFO_DEST_OPTIONS}
+              disabled={!params.lfo_on}
+              onChange={(v) => set('lfo_dest', v)}
+            />
+          </div>
         </div>
 
         {/* ── Wheels, centred on cols 1 and 2 ─────────────────────────── */}
@@ -412,7 +406,6 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             drive={params.drive}
             drive_type={params.drive_type}
             phaseLead={0}
-            label="Now"
             width={VOX_CHART_WIDTH}
             height={VOX_CHART_HEIGHT}
           />
@@ -430,7 +423,6 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             drive={params.drive}
             drive_type={params.drive_type}
             phaseLead={8}
-            label="+Δt"
             width={VOX_CHART_WIDTH}
             height={VOX_CHART_HEIGHT}
           />

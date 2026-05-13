@@ -117,7 +117,7 @@ export function WaveformPreview({
     const effectiveMix = osc2Off ? 0 : osc_mix;
     const effectiveRing = osc2Off ? 0 : ring_on;
 
-    ctx.strokeStyle = '#a78bfa';
+    ctx.strokeStyle = '#f6a96b'; // --screen
     ctx.lineWidth = 2;
     ctx.beginPath();
     for (let x = 0; x < width; x++) {
