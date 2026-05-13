@@ -9,10 +9,10 @@
  *
  * The layout has two mirror axes:
  *
- *   X_MIRROR — vertical line, halfway between the right of the Wheels
- *              zone and the right of the body. The 4-column knob grid,
- *              the four vsliders, and the voice/envelope chart bboxes
- *              all mirror around it.
+ *   X_MIRROR — vertical line, halfway between the left of the Oscillators
+ *              / Voice column and the right of the body. The 4-column
+ *              knob grid, the four vsliders, and the voice/envelope chart
+ *              bboxes all mirror around it.
  *
  *   Y_MIRROR — horizontal line, between the top and bottom rows of
  *              fieldsets. The 4×2 knob grid mirrors around it.
@@ -32,9 +32,9 @@
 // Mirror axes
 // ──────────────────────────────────────────────────────────────────
 
-/** Halfway between the right of the Wheels zone (187) and the right of
- *  the body (2136). */
-export const X_MIRROR = 1161.5;
+/** Halfway between the left of the Oscillators / Voice column (203)
+ *  and the right of the body (2136). */
+export const X_MIRROR = 1169.5;
 
 /** Between top zones (end at 507) and bottom zones (start at 523). */
 export const Y_MIRROR = 515;
@@ -52,15 +52,15 @@ const KNOB_HALF_OUTER = KNOB_HALF_INNER * 3;        // 259.875 — col 1 / col 4
 
 /** Column centres (X), in body coords. */
 export const KNOB_COLS = {
-  c1: X_MIRROR - KNOB_HALF_OUTER, // 901.625  — bottom-right of Oscillators
-  c2: X_MIRROR - KNOB_HALF_INNER, // 1074.875 — centre of Drive
-  c3: X_MIRROR + KNOB_HALF_INNER, // 1248.125 — left half of Filter
-  c4: X_MIRROR + KNOB_HALF_OUTER  // 1421.375 — right half of Filter
+  c1: X_MIRROR - KNOB_HALF_OUTER, // 909.625  — bottom-right of Oscillators
+  c2: X_MIRROR - KNOB_HALF_INNER, // 1082.875 — centre of Drive
+  c3: X_MIRROR + KNOB_HALF_INNER, // 1256.125 — left half of Filter
+  c4: X_MIRROR + KNOB_HALF_OUTER  // 1429.375 — right half of Filter
 } as const;
 
 /** Filter Env-Amount knob — sits one full column step to the right of
  *  Reso. Outside the main 4×2 grid; row 1 only. */
-export const ENV_AMT_X = KNOB_COLS.c4 + KNOB_COL_SPACING; // 1594.625
+export const ENV_AMT_X = KNOB_COLS.c4 + KNOB_COL_SPACING; // 1602.625
 
 /** Vertical half-gap between Y_MIRROR and a knob row centre.
  *  112.5 = 75 × 1.5 (original gap increased by 50%). */
@@ -84,32 +84,32 @@ const HALF_GAP = ZONE_GAP / 2;
 /** Gap centres (between adjacent knob columns).
  *  Each zone border sits HALF_GAP away from the relevant gap centre,
  *  so the actual gap between adjacent boxes is always exactly ZONE_GAP. */
-const GAP_OSC_DRIVE   = (KNOB_COLS.c1 + KNOB_COLS.c2) / 2;  // 988.25  — mid(Shape, Drive)
-const GAP_DRIVE_FILT  = (KNOB_COLS.c2 + KNOB_COLS.c3) / 2;  // 1161.5  — mid(Drive, Cutoff) (= X_MIRROR)
+const GAP_OSC_DRIVE   = (KNOB_COLS.c1 + KNOB_COLS.c2) / 2;  // 996.25  — mid(Shape, Drive)
+const GAP_DRIVE_FILT  = (KNOB_COLS.c2 + KNOB_COLS.c3) / 2;  // 1169.5  — mid(Drive, Cutoff) (= X_MIRROR)
 
 /** Drive box — centred on COL2; borders sit HALF_GAP off the gap
  *  centres so the actual gap to neighbour boxes is ZONE_GAP. */
-export const DRIVE_LEFT = GAP_OSC_DRIVE + HALF_GAP;            // 996.25
-export const DRIVE_RIGHT = GAP_DRIVE_FILT - HALF_GAP;          // 1153.5
+export const DRIVE_LEFT = GAP_OSC_DRIVE + HALF_GAP;            // 1004.25
+export const DRIVE_RIGHT = GAP_DRIVE_FILT - HALF_GAP;          // 1161.5
 export const DRIVE_WIDTH = DRIVE_RIGHT - DRIVE_LEFT;           // 157.25
 
 /** Filter — left follows the drive/filter seam; right is set so the
  *  Reso knob (COL4) sits exactly in the centre of the filter box. */
-export const FILTER_LEFT = GAP_DRIVE_FILT + HALF_GAP;          // 1169.5
-export const FILTER_RIGHT = 2 * KNOB_COLS.c4 - FILTER_LEFT;    // 1673.25
+export const FILTER_LEFT = GAP_DRIVE_FILT + HALF_GAP;          // 1177.5
+export const FILTER_RIGHT = 2 * KNOB_COLS.c4 - FILTER_LEFT;    // 1681.25
 export const FILTER_WIDTH = FILTER_RIGHT - FILTER_LEFT;        // 503.75
 
 /** Oscillators — right edge sits HALF_GAP before the osc/drive gap
  *  centre. Left edge unchanged. */
 export const OSC_LEFT = 203;
-export const OSC_RIGHT = GAP_OSC_DRIVE - HALF_GAP;             // 980.25
-export const OSC_WIDTH = OSC_RIGHT - OSC_LEFT;                 // 777.25
+export const OSC_RIGHT = GAP_OSC_DRIVE - HALF_GAP;             // 988.25
+export const OSC_WIDTH = OSC_RIGHT - OSC_LEFT;                 // 785.25
 
 /** LFO — left follows from filter's right (one ZONE_GAP across). */
-export const LFO_LEFT = FILTER_RIGHT + ZONE_GAP;               // 1689.25
+export const LFO_LEFT = FILTER_RIGHT + ZONE_GAP;               // 1697.25
 export const LFO_RIGHT = 2136;
-export const LFO_WIDTH = LFO_RIGHT - LFO_LEFT;                 // 446.75
-export const LFO_CX = (LFO_LEFT + LFO_RIGHT) / 2;              // 1912.625
+export const LFO_WIDTH = LFO_RIGHT - LFO_LEFT;                 // 438.75
+export const LFO_CX = (LFO_LEFT + LFO_RIGHT) / 2;              // 1916.625
 
 // ──────────────────────────────────────────────────────────────────
 // Vsliders — 4 sliders mirrored around X_MIRROR.
@@ -122,14 +122,14 @@ export const LFO_CX = (LFO_LEFT + LFO_RIGHT) / 2;              // 1912.625
 // (181.33 apart instead of 272).
 
 const VSLIDER_HALF_SPACING = 90.667;            // distance from LFO_CX to depth or rate
-const RATE_X = LFO_CX + VSLIDER_HALF_SPACING;   // 1990.667
-const DEPTH_X = LFO_CX - VSLIDER_HALF_SPACING;  // 1809.333
+const RATE_X = LFO_CX + VSLIDER_HALF_SPACING;   // 2007.292
+const DEPTH_X = LFO_CX - VSLIDER_HALF_SPACING;  // 1825.958
 
 export const VSLIDERS = {
-  mix:    2 * X_MIRROR - RATE_X,                // 332.333 — mirror of RATE
-  detune: 2 * X_MIRROR - DEPTH_X,               // 513.667 — mirror of DEPTH
-  depth:  DEPTH_X,                              // 1809.333
-  rate:   RATE_X                                // 1990.667
+  mix:    2 * X_MIRROR - RATE_X,                // 331.708 — mirror of RATE
+  detune: 2 * X_MIRROR - DEPTH_X,               // 513.042 — mirror of DEPTH
+  depth:  DEPTH_X,                              // 1825.958
+  rate:   RATE_X                                // 2007.292
 } as const;
 
 /** Single Y centre for all four vsliders. */
@@ -149,10 +149,10 @@ export const VSLIDER_Y = 340;
 const DRIVE_BOX_INSET = KNOB_COLS.c2 - DRIVE_LEFT;        // 78.625
 
 export const VOX_LEFT = OSC_LEFT;                          // 203
-export const ENV_LEFT = KNOB_COLS.c1 - DRIVE_BOX_INSET;    // 823 — same inset as drive's
-export const VOX_RIGHT = ENV_LEFT - ZONE_GAP;              // 807
+export const ENV_LEFT = KNOB_COLS.c1 - DRIVE_BOX_INSET;    // 831 — same inset as drive's
+export const VOX_RIGHT = ENV_LEFT - ZONE_GAP;              // 815
 export const ENV_RIGHT = LFO_RIGHT;                        // 2136
-export const VOX_WIDTH = VOX_RIGHT - VOX_LEFT;             // 604
+export const VOX_WIDTH = VOX_RIGHT - VOX_LEFT;             // 612
 
 // ──────────────────────────────────────────────────────────────────
 // Voice and Envelope chart geometry
@@ -162,28 +162,28 @@ export const VOX_WIDTH = VOX_RIGHT - VOX_LEFT;             // 604
 // gap between them. The user-stated rule: charts are horizontally
 // centred in vox with equal space on either side and between them
 // (so vox_width = 2 × chart_width + 3 × shared_gap). With chart width
-// fixed at 300 and vox at 604, the shared gap works out to ~1.33.
+// fixed at 300 and vox at 612, the shared gap works out to 4 px.
 //
 // Env chart is a single canvas whose bounding box is the mirror image
 // of the voice bbox around X_MIRROR.
 
 export const VOX_CHART_WIDTH = 300;
 export const VOX_CHART_HEIGHT = 180;
-export const VOX_CHART_GAP = (VOX_WIDTH - 2 * VOX_CHART_WIDTH) / 3;   // 1.333
-export const VOX_BBOX_WIDTH = 2 * VOX_CHART_WIDTH + VOX_CHART_GAP;    // 601.333
+export const VOX_CHART_GAP = (VOX_WIDTH - 2 * VOX_CHART_WIDTH) / 3;   // 4
+export const VOX_BBOX_WIDTH = 2 * VOX_CHART_WIDTH + VOX_CHART_GAP;    // 604
 
-export const VOX_BBOX_LEFT = VOX_LEFT + VOX_CHART_GAP;                 // 204.333
-export const VOX_BBOX_RIGHT = VOX_BBOX_LEFT + VOX_BBOX_WIDTH;          // 805.667
+export const VOX_BBOX_LEFT = VOX_LEFT + VOX_CHART_GAP;                 // 207
+export const VOX_BBOX_RIGHT = VOX_BBOX_LEFT + VOX_BBOX_WIDTH;          // 811
 
-export const VOX_CHART_1_CX = VOX_BBOX_LEFT + VOX_CHART_WIDTH / 2;     // 354.333
-export const VOX_CHART_2_CX = VOX_BBOX_RIGHT - VOX_CHART_WIDTH / 2;    // 655.667
+export const VOX_CHART_1_CX = VOX_BBOX_LEFT + VOX_CHART_WIDTH / 2;     // 357
+export const VOX_CHART_2_CX = VOX_BBOX_RIGHT - VOX_CHART_WIDTH / 2;    // 661
 
 /** Env chart bbox is the mirror image of the voice bbox around X_MIRROR. */
-export const ENV_CHART_LEFT = 2 * X_MIRROR - VOX_BBOX_RIGHT;   // 1517.333
-export const ENV_CHART_RIGHT = 2 * X_MIRROR - VOX_BBOX_LEFT;   // 2118.667
-export const ENV_CHART_WIDTH = VOX_BBOX_WIDTH;                 // 601.333
+export const ENV_CHART_LEFT = 2 * X_MIRROR - VOX_BBOX_RIGHT;   // 1528
+export const ENV_CHART_RIGHT = 2 * X_MIRROR - VOX_BBOX_LEFT;   // 2132
+export const ENV_CHART_WIDTH = VOX_BBOX_WIDTH;                 // 604
 export const ENV_CHART_HEIGHT = VOX_CHART_HEIGHT;              // 180
-export const ENV_CHART_CX = (ENV_CHART_LEFT + ENV_CHART_RIGHT) / 2; // 1818
+export const ENV_CHART_CX = (ENV_CHART_LEFT + ENV_CHART_RIGHT) / 2; // 1830
 
 /** Y centre for voice and envelope charts (in body coords). */
 export const CHART_Y = 640;
