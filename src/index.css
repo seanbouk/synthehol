@@ -55,6 +55,7 @@ button.secondary:hover { border-color: var(--muted); }
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;     /* containing block for the device-details menu */
 }
 
 .tabbar {
@@ -64,6 +65,8 @@ button.secondary:hover { border-color: var(--muted); }
   padding: 8px 12px;
   background: var(--canvas);
   border-bottom: 1px solid var(--border);
+  position: relative;     /* needed for z-index to take effect */
+  z-index: 20;            /* above the device-details overlay */
 }
 
 .tabbar .tab {
@@ -146,45 +149,75 @@ code {
 
 /* ─── Device tab + PSG panel ────────────────────────────────────── */
 
-/* The device tab fills the full available height below the slide-down
-   header so the PSG stage can pick a large render size. */
 .device-tab {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-/* Slide-down container for the device header. Re-clicking the active
-   device tab toggles `.open`; the panel animates max-height + opacity
-   so the instrument panel below isn't pushed around abruptly. */
-.device-details {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  flex-shrink: 0;
-  transition: max-height 220ms ease, opacity 180ms ease, margin-bottom 220ms ease;
-}
-.device-details.open {
-  /* Generous cap — header is ~80 px; doesn't need to be tight. */
-  max-height: 200px;
-  opacity: 1;
-  margin-bottom: 16px;
-}
-
-.device-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  flex-shrink: 0;
-}
-
-.device-header h2 { margin-bottom: 4px; }
-.device-header p { margin: 0; font-size: 12px; }
-
 .device-stage-wrap {
   flex: 1;
   min-height: 0;
+}
+
+/* ─── Device details: file-menu-style drop-down ──────────────────── */
+/*
+ * Anchored to the app shell so it can overlay the .tab-content area
+ * without being pushed around or clipped by the scroll container. The
+ * tab bar sits above it via z-index. Re-clicking the active device tab
+ * toggles `.open`; the menu animates open with max-height + opacity.
+ */
+.device-details-menu {
+  position: absolute;
+  top: 44px;                            /* just under the .tabbar */
+  left: 12px;                           /* aligned with .tabbar padding */
+  width: 280px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;                          /* above content, below .tabbar (z:20) */
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: max-height 200ms ease, opacity 160ms ease;
+}
+.device-details-menu.open {
+  max-height: 360px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.device-details-section {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.device-details-section:last-of-type { border-bottom: none; }
+
+.device-details-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.device-details-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.device-details-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.device-details-row .muted { color: var(--muted); }
+
+.device-details-panic {
+  margin: 12px 16px 16px 16px;
 }
 
 /* ─── PSG Stage: 2200×800 fixed surface, uniform CSS scale to fit ── */
@@ -267,25 +300,33 @@ code {
 }
 
 /* Labeled group — title above its control(s), used for the three OSC
-   radio groups. The OSC stack uses a wider gap so the groups have
-   visible breathing room between them. */
+   radio groups and the sync/ring LED row (which has an empty label so
+   its vertical rhythm matches the labelled rows). */
 .psg-labeled-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .psg-group-label {
   font-size: 13px;
+  line-height: 1.4;
+  min-height: 1.4em;            /* always reserve label height — empty label = even rhythm */
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 .psg-led-row {
   display: flex;
-  gap: 16px;
+  gap: 12px;
 }
 .osc-stack {
-  gap: 28px;
+  gap: 18px;
+}
+/* OSC labelled groups sit at the right side of the zone, with their
+   titles and radios sharing the same left edge (body-x = col 6 left =
+   800). With zone-left=320 + zone padding-left=28 + 452 = 800. */
+.osc-group {
+  padding-left: 452px;
 }
 
 /* ─── Voice screen container (label above canvas) ────────────────── */

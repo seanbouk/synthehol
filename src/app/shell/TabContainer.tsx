@@ -1,5 +1,6 @@
 import { useAppStore } from '../../state/app-store';
 import { TabBar } from './TabBar';
+import { DeviceDetailsMenu } from './DeviceDetailsMenu';
 import { HomeTab } from '../tabs/HomeTab';
 import { DrumsTab } from '../tabs/DrumsTab';
 import { BassTab } from '../tabs/BassTab';
@@ -19,6 +20,7 @@ export function TabContainer() {
   return (
     <div className="app">
       <TabBar />
+      <DeviceDetailsMenu />
       <main className="tab-content">{content}</main>
     </div>
   );

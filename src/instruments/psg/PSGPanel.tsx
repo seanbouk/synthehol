@@ -136,7 +136,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
 
         <div className="psg-zone osc">
           <div className="psg-stack osc-stack">
-            <div className="psg-labeled-group">
+            <div className="psg-labeled-group osc-group">
               <div className="psg-group-label">OSC 1</div>
               <ButtonGroup
                 value={params.osc1_wave}
@@ -144,7 +144,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                 onChange={(v) => set('osc1_wave', v)}
               />
             </div>
-            <div className="psg-labeled-group">
+            <div className="psg-labeled-group osc-group">
               <div className="psg-group-label">OSC 2</div>
               <ButtonGroup
                 value={params.osc2_wave}
@@ -152,7 +152,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                 onChange={(v) => set('osc2_wave', v)}
               />
             </div>
-            <div className="psg-labeled-group">
+            <div className="psg-labeled-group osc-group">
               <div className="psg-group-label">OSC 2 octave</div>
               <ButtonGroup
                 value={params.osc2_octave}
@@ -161,20 +161,25 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                 onChange={(v) => set('osc2_octave', v)}
               />
             </div>
-            <div className="psg-led-row">
-              <LEDToggle
-                label="Sync"
-                value={params.sync_on}
-                disabled={osc2Off}
-                onChange={(v) => set('sync_on', v)}
-              />
-              <LEDToggle
-                label="Ring"
-                value={params.ring_on}
-                warn
-                disabled={osc2Off}
-                onChange={(v) => set('ring_on', v)}
-              />
+            <div className="psg-labeled-group osc-group">
+              {/* Empty label keeps the vertical rhythm even with the
+                  three groups above. */}
+              <div className="psg-group-label">{' '}</div>
+              <div className="psg-led-row">
+                <LEDToggle
+                  label="Sync"
+                  value={params.sync_on}
+                  disabled={osc2Off}
+                  onChange={(v) => set('sync_on', v)}
+                />
+                <LEDToggle
+                  label="Ring"
+                  value={params.ring_on}
+                  warn
+                  disabled={osc2Off}
+                  onChange={(v) => set('ring_on', v)}
+                />
+              </div>
             </div>
           </div>
         </div>
