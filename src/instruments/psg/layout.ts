@@ -26,8 +26,9 @@
 // Mirror axes
 // ──────────────────────────────────────────────────────────────────
 
-/** X mirror — between drive (ends at 1258) and filter (starts at 1275). */
-export const X_MIRROR = 1266.5;
+/** X mirror — halfway between the right edge of the Wheels zone (body x
+ *  = 187) and the right edge of the body (2136). */
+export const X_MIRROR = 1161.5;
 
 /** Y mirror — between top zones (end at 507) and bottom zones (start at 523). */
 export const Y_MIRROR = 515;
@@ -76,3 +77,38 @@ export const VSLIDERS = {
 
 /** Single Y centre for all four vsliders. */
 export const VSLIDER_Y = 340;
+
+// ──────────────────────────────────────────────────────────────────
+// Voice (vox) and Envelope (env) chart geometry
+// ──────────────────────────────────────────────────────────────────
+//
+// Voice has two side-by-side waveform charts inside the vox zone with
+// a small gap between them. Their combined bounding box mirrors the
+// envelope chart's bounding box around X_MIRROR — the env chart spans
+// the same width as the voice bbox (gap included), placed symmetrically.
+// Y centre is identical so they sit on a shared horizontal axis.
+
+export const VOX_CHART_WIDTH = 300;
+export const VOX_CHART_HEIGHT = 180;
+export const VOX_CHART_GAP = 16;
+export const VOX_BBOX_WIDTH = 2 * VOX_CHART_WIDTH + VOX_CHART_GAP; // 616
+
+/** Voice bbox is centred inside the vox zone (which spans x=203..855). */
+const VOX_ZONE_CENTRE = (203 + 855) / 2; // 529
+export const VOX_BBOX_LEFT = VOX_ZONE_CENTRE - VOX_BBOX_WIDTH / 2;   // 221
+export const VOX_BBOX_RIGHT = VOX_BBOX_LEFT + VOX_BBOX_WIDTH;         // 837
+
+/** Centres of the two voice charts (body coords). */
+export const VOX_CHART_1_CX = VOX_BBOX_LEFT + VOX_CHART_WIDTH / 2;    // 371
+export const VOX_CHART_2_CX = VOX_BBOX_RIGHT - VOX_CHART_WIDTH / 2;   // 687
+
+/** Env chart bbox is the mirror image of the voice bbox around X_MIRROR. */
+export const ENV_CHART_LEFT = 2 * X_MIRROR - VOX_BBOX_RIGHT;   // 1486
+export const ENV_CHART_RIGHT = 2 * X_MIRROR - VOX_BBOX_LEFT;   // 2102
+export const ENV_CHART_WIDTH = VOX_BBOX_WIDTH;                 // 616
+export const ENV_CHART_HEIGHT = VOX_CHART_HEIGHT;              // 180
+export const ENV_CHART_CX = (ENV_CHART_LEFT + ENV_CHART_RIGHT) / 2; // 1794
+
+/** Y centre for voice and envelope charts (in body coords).
+ *  Both zones span y=523..757; charts are centred vertically. */
+export const CHART_Y = 640;

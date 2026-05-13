@@ -15,8 +15,12 @@ interface KnobProps {
   onChange: (v: number) => void;
 }
 
-const SIZE = 52;
-const RADIUS = 20;
+const SIZE = 104;
+const RADIUS = 40;
+const ARC_BG_WIDTH = 8;
+const ARC_FG_WIDTH = 8;
+const INDICATOR_INSET = 12;
+const INDICATOR_WIDTH = 4;
 const ARC_START = Math.PI * 0.75;       // bottom-left
 const ARC_END = Math.PI * 0.25 + Math.PI * 2; // bottom-right, going clockwise
 
@@ -56,7 +60,7 @@ export function Knob({ label, value, min, max, log = false, step, format, disabl
 
     // Background arc
     ctx.strokeStyle = disabled ? '#1f1b18' : '#322c28';
-    ctx.lineWidth = 4;
+    ctx.lineWidth = ARC_BG_WIDTH;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.arc(cx, cy, RADIUS, ARC_START, ARC_END);
@@ -66,15 +70,16 @@ export function Knob({ label, value, min, max, log = false, step, format, disabl
     const t = toNormalized(value, min, max, log);
     const angle = ARC_START + t * (ARC_END - ARC_START);
     ctx.strokeStyle = disabled ? '#4d433d' : '#a78bfa';
+    ctx.lineWidth = ARC_FG_WIDTH;
     ctx.beginPath();
     ctx.arc(cx, cy, RADIUS, ARC_START, angle);
     ctx.stroke();
 
     // Indicator line from centre
-    const ix = cx + Math.cos(angle) * (RADIUS - 6);
-    const iy = cy + Math.sin(angle) * (RADIUS - 6);
+    const ix = cx + Math.cos(angle) * (RADIUS - INDICATOR_INSET);
+    const iy = cy + Math.sin(angle) * (RADIUS - INDICATOR_INSET);
     ctx.strokeStyle = disabled ? '#6b5e54' : '#ece5dd';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = INDICATOR_WIDTH;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(ix, iy);

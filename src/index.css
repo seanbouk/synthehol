@@ -261,7 +261,9 @@ code {
   gap: 10px;
 }
 
-/* Zone-internal layouts that aren't grid-driven. */
+/* Zone-internal layout (perf is the only zone with non-grid children
+   that still uses flex; vox/env zones are just fieldset frames now,
+   their content lives in body-absolute positions). */
 .perf-row {
   display: flex;
   gap: 12px;
@@ -269,25 +271,6 @@ code {
   align-items: flex-start;
   height: 100%;
   padding-top: 8px;
-}
-
-.vox-row {
-  display: flex;
-  gap: 16px;
-  justify-content: space-around;
-  align-items: center;
-  height: 100%;
-}
-
-.env-curve-wrap {
-  position: absolute;
-  /* Sits to the right of the col-4 knob — leave room for the knob's
-     halo (knob right edge ≈ body x 1640, env zone left edge body x 871,
-     so within-zone left = 1640 - 871 + 12 gap = 781). */
-  left: 781px;
-  right: 12px;
-  top: 24px;
-  bottom: 18px;
 }
 
 /* ─── Voice screen container (label above canvas) ────────────────── */
@@ -417,20 +400,20 @@ button.led-toggle:disabled .led {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 60px;
+  min-width: 112px;
   user-select: none;
 }
 
 .knob-label {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--muted);
-  margin-top: 4px;
+  margin-top: 6px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .knob-value {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }

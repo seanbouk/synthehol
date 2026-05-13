@@ -10,7 +10,11 @@ import type { PSGParams } from './psg-defaults';
 import { WaveformPreview } from './WaveformPreview';
 import { ADSRCurve } from './ADSRCurve';
 import { Stage } from './Stage';
-import { KNOB_COLS, KNOB_ROWS, VSLIDERS, VSLIDER_Y } from './layout';
+import {
+  KNOB_COLS, KNOB_ROWS, VSLIDERS, VSLIDER_Y,
+  VOX_CHART_1_CX, VOX_CHART_2_CX, ENV_CHART_CX, CHART_Y,
+  ENV_CHART_WIDTH, ENV_CHART_HEIGHT
+} from './layout';
 
 /**
  * PSG instrument panel.
@@ -251,51 +255,11 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
         </div>
 
         <div className="psg-zone vox">
-          <Field title="Voice">
-            <div className="vox-row">
-              <WaveformPreview
-                osc1_wave={params.osc1_wave}
-                osc2_wave={params.osc2_wave}
-                shape={params.shape}
-                osc_mix={params.osc_mix}
-                osc2_octave={params.osc2_octave}
-                osc2_detune={params.osc2_detune}
-                ring_on={params.ring_on}
-                drive_on={params.drive_on}
-                drive={params.drive}
-                drive_type={params.drive_type}
-                phaseLead={0}
-                label="Now"
-              />
-              <WaveformPreview
-                osc1_wave={params.osc1_wave}
-                osc2_wave={params.osc2_wave}
-                shape={params.shape}
-                osc_mix={params.osc_mix}
-                osc2_octave={params.osc2_octave}
-                osc2_detune={params.osc2_detune}
-                ring_on={params.ring_on}
-                drive_on={params.drive_on}
-                drive={params.drive}
-                drive_type={params.drive_type}
-                phaseLead={8}
-                label="+Δt"
-              />
-            </div>
-          </Field>
+          <Field title="Voice" />
         </div>
 
         <div className="psg-zone env">
-          <Field title="Envelope">
-            <div className="env-curve-wrap">
-              <ADSRCurve
-                attack={params.attack}
-                decay={params.decay}
-                sustain={params.sustain}
-                release={params.release}
-              />
-            </div>
-          </Field>
+          <Field title="Envelope" />
         </div>
 
         {/* ── 4×2 knob grid, body-absolute, referencing layout.ts ───── */}
@@ -419,6 +383,51 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             disabled={!params.lfo_on}
             onChange={(v) => set('lfo_rate', v)}
             format={(v) => `${v.toFixed(2)} Hz`}
+          />
+        </At>
+
+        {/* ── Voice charts (left) + Envelope chart (right of mirror) ── */}
+
+        <At x={VOX_CHART_1_CX} y={CHART_Y}>
+          <WaveformPreview
+            osc1_wave={params.osc1_wave}
+            osc2_wave={params.osc2_wave}
+            shape={params.shape}
+            osc_mix={params.osc_mix}
+            osc2_octave={params.osc2_octave}
+            osc2_detune={params.osc2_detune}
+            ring_on={params.ring_on}
+            drive_on={params.drive_on}
+            drive={params.drive}
+            drive_type={params.drive_type}
+            phaseLead={0}
+            label="Now"
+          />
+        </At>
+        <At x={VOX_CHART_2_CX} y={CHART_Y}>
+          <WaveformPreview
+            osc1_wave={params.osc1_wave}
+            osc2_wave={params.osc2_wave}
+            shape={params.shape}
+            osc_mix={params.osc_mix}
+            osc2_octave={params.osc2_octave}
+            osc2_detune={params.osc2_detune}
+            ring_on={params.ring_on}
+            drive_on={params.drive_on}
+            drive={params.drive}
+            drive_type={params.drive_type}
+            phaseLead={8}
+            label="+Δt"
+          />
+        </At>
+        <At x={ENV_CHART_CX} y={CHART_Y}>
+          <ADSRCurve
+            attack={params.attack}
+            decay={params.decay}
+            sustain={params.sustain}
+            release={params.release}
+            width={ENV_CHART_WIDTH}
+            height={ENV_CHART_HEIGHT}
           />
         </At>
 

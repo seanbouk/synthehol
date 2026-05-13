@@ -5,13 +5,22 @@ interface ADSRCurveProps {
   decay: number;
   sustain: number;  // 0..1
   release: number;
+  width?: number;
+  height?: number;
 }
 
-const WIDTH = 480;
-const HEIGHT = 100;
+const DEFAULT_WIDTH = 480;
+const DEFAULT_HEIGHT = 100;
 const SUSTAIN_DURATION = 0.5; // fixed sustain region for the visualisation
 
-export function ADSRCurve({ attack, decay, sustain, release }: ADSRCurveProps) {
+export function ADSRCurve({
+  attack,
+  decay,
+  sustain,
+  release,
+  width = DEFAULT_WIDTH,
+  height = DEFAULT_HEIGHT
+}: ADSRCurveProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -20,33 +29,33 @@ export function ADSRCurve({ attack, decay, sustain, release }: ADSRCurveProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = WIDTH * dpr;
-    canvas.height = HEIGHT * dpr;
-    ctx.scale(dpr, dpr);
+    const dpr = Math.max(1, Math.min(3, (window.devicePixelRatio || 1) * 1.5));
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.fillStyle = '#100d0b';
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    ctx.fillRect(0, 0, width, height);
 
     const total = attack + decay + SUSTAIN_DURATION + release;
-    const xAt = (t: number) => (t / total) * (WIDTH - 4) + 2;
-    const yAt = (v: number) => HEIGHT - 8 - v * (HEIGHT - 16);
+    const xAt = (t: number) => (t / total) * (width - 4) + 2;
+    const yAt = (v: number) => height - 8 - v * (height - 16);
 
-    // Grid baseline
+    // Baseline
     ctx.strokeStyle = '#322c28';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, yAt(0));
-    ctx.lineTo(WIDTH, yAt(0));
+    ctx.lineTo(width, yAt(0));
     ctx.stroke();
 
-    // Stage boundaries (faint verticals)
+    // Stage boundaries
     const boundaries = [attack, attack + decay, attack + decay + SUSTAIN_DURATION];
     ctx.strokeStyle = '#1f1b18';
     ctx.beginPath();
     for (const t of boundaries) {
       ctx.moveTo(xAt(t), 0);
-      ctx.lineTo(xAt(t), HEIGHT);
+      ctx.lineTo(xAt(t), height);
     }
     ctx.stroke();
 
@@ -66,12 +75,12 @@ export function ADSRCurve({ attack, decay, sustain, release }: ADSRCurveProps) {
     ctx.lineTo(xAt(total), yAt(0));
     ctx.lineTo(xAt(0), yAt(0));
     ctx.fill();
-  }, [attack, decay, sustain, release]);
+  }, [attack, decay, sustain, release, width, height]);
 
   return (
     <canvas
       ref={canvasRef}
-      style={{ width: WIDTH, height: HEIGHT, borderRadius: 4, display: 'block', marginTop: 12 }}
+      style={{ width, height, borderRadius: 4, display: 'block' }}
     />
   );
 }
