@@ -9,6 +9,9 @@
   --disabled-soft: #6b5e54;
   --accent: #a78bfa;
   --accent-soft: rgba(167, 139, 250, 0.08);
+  --screen: #f6a96b;        /* warm dusky orange — waveform / envelope strokes */
+  --screen-soft: rgba(246, 169, 107, 0.10);
+  --rule: #7dd3c0;          /* dusky teal — section-divider rules */
   --warn: #fbbf24;
   --error: #f87171;
   --note: #60a5fa;
@@ -52,6 +55,7 @@ button.secondary:hover { border-color: var(--muted); }
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;     /* containing block for the device-details menu */
 }
 
 .tabbar {
@@ -61,6 +65,8 @@ button.secondary:hover { border-color: var(--muted); }
   padding: 8px 12px;
   background: var(--canvas);
   border-bottom: 1px solid var(--border);
+  position: relative;     /* needed for z-index to take effect */
+  z-index: 20;            /* above the device-details overlay */
 }
 
 .tabbar .tab {
@@ -143,29 +149,76 @@ code {
 
 /* ─── Device tab + PSG panel ────────────────────────────────────── */
 
-/* The device tab fills the full available height below the header so
-   the PSG stage can pick a large render size. */
 .device-tab {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   height: 100%;
 }
-
-.device-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  flex-shrink: 0;
-}
-
-.device-header h2 { margin-bottom: 4px; }
-.device-header p { margin: 0; font-size: 12px; }
 
 .device-stage-wrap {
   flex: 1;
   min-height: 0;
+}
+
+/* ─── Device details: file-menu-style drop-down ──────────────────── */
+/*
+ * Anchored to the app shell so it can overlay the .tab-content area
+ * without being pushed around or clipped by the scroll container. The
+ * tab bar sits above it via z-index. Re-clicking the active device tab
+ * toggles `.open`; the menu animates open with max-height + opacity.
+ */
+.device-details-menu {
+  position: absolute;
+  top: 44px;                            /* just under the .tabbar */
+  /* left set inline so it tracks the active tab button */
+  width: 280px;
+  padding-top: 12px;                    /* breathing room above the first row */
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;                          /* above content, below .tabbar (z:20) */
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: max-height 200ms ease, opacity 160ms ease;
+}
+.device-details-menu.open {
+  max-height: 400px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.device-details-section {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.device-details-section:last-of-type { border-bottom: none; }
+
+.device-details-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.device-details-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+.device-details-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.device-details-row .muted { color: var(--muted); }
+
+.device-details-panic {
+  margin: 12px 16px 16px 16px;
 }
 
 /* ─── PSG Stage: 2200×800 fixed surface, uniform CSS scale to fit ── */
@@ -181,73 +234,49 @@ code {
 }
 
 .psg-stage-inner {
-  width: 2200px;
+  width: 2240px;
   height: 800px;
   flex-shrink: 0;
   transform-origin: center;
   position: relative;
 }
 
-/* Body area inside the stage — matches the design's 32 / 21 padding. */
+/* Body fills the entire stage. The 14×5 × 160 px grid IS the layout —
+   no extra padding to break it. */
 .psg-body {
   position: absolute;
-  top: 21px;
-  left: 32px;
-  width: 2136px;
-  height: 757px;
+  top: 0;
+  left: 0;
+  width: 2240px;
+  height: 800px;
 }
 
-/* Each zone is absolutely placed inside .psg-body. */
+/* Each zone is absolutely placed inside .psg-body, aligned to grid
+   cells (see src/instruments/psg/layout.ts and refs/grid-sketch.svg).
+   Zones are unframed regions — section boundaries are drawn with the
+   .psg-rule lines, not with borders. */
 .psg-zone {
   position: absolute;
 }
 
-/* Zone X-positions are kept in sync with layout.ts — every adjacent
-   pair of fieldset boxes is separated by ZONE_GAP = 16px. Drive box is
-   centred on COL2, with its borders sitting half a gap inside each
-   knob-pair midpoint (drive/osc seam = mid(Shape,Drive); drive/filter
-   seam = mid(Drive,Cutoff)). Vox/env share the same X seam as
-   osc/drive so the row boundary aligns visually. */
-.psg-zone.perf  { left: 0;         top: 0;     width: 187px;    height: 757px; }
-.psg-zone.osc   { left: 203px;     top: 0;     width: 785.25px; height: 507px; }
-.psg-zone.drive { left: 1004.25px; top: 0;     width: 157.25px; height: 507px; }
-.psg-zone.filt  { left: 1177.5px;  top: 0;     width: 503.75px; height: 507px; }
-.psg-zone.lfo   { left: 1697.25px; top: 0;     width: 438.75px; height: 507px; }
-/* Env zone's left edge sits the same distance from Attack as drive
-   zone's left edge sits from the Drive knob (78.625 px). Vox's right
-   edge follows with the standard 16 px ZONE_GAP, giving vox a width
-   of 604 to hold the two voice screens with equal padding. */
-.psg-zone.vox   { left: 203px; top: 523px; width: 612px;  height: 234px; }
-.psg-zone.env   { left: 831px; top: 523px; width: 1305px; height: 234px; }
+/* Underlying cell rectangles:
+     Columns: 1=0   2=160  3=320  …  14=2080  (right edge = 2240)
+     Rows:    1=0   2=160  3=320  4=480  5=640 (bottom = 800) */
+.psg-zone.osc   { left: 320px;  top: 0;   width: 800px; height: 640px; padding: 24px 28px; } /* cells 3–7 / rows 1–4 */
+.psg-zone.drive { left: 1120px; top: 0;   width: 160px; height: 640px; padding: 24px 12px; } /* cell  8   / rows 1–4 */
+.psg-zone.filt  { left: 1280px; top: 0;   width: 480px; height: 640px; padding: 24px 28px; } /* cells 9–11/ rows 1–4 */
+.psg-zone.lfo   { left: 1760px; top: 0;   width: 480px; height: 640px; padding: 24px 28px; } /* cells 12–14/ rows 1–4 */
 
-/* ─── Fieldset: bordered panel with a title that breaks the border ─ */
+/* ─── Section-divider rule (thin teal line on a column / row boundary) */
 
-.psg-field {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  background: var(--panel);
-}
-
-.psg-field-title {
+.psg-rule {
   position: absolute;
-  top: -11px;
-  left: 24px;
-  padding: 0 10px;
-  background: var(--bg);
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  line-height: 1;
-}
-
-.psg-field-body {
-  position: absolute;
-  inset: 24px 18px 18px 18px;
+  background: var(--rule);
+  opacity: 0.55;
+  pointer-events: none;
+  /* Paint above canvases so the rules clip the screens rather than
+     getting clipped by them. */
+  z-index: 1;
 }
 
 /* ─── Layout helpers inside zones ────────────────────────────────── */
@@ -268,18 +297,75 @@ code {
 .psg-stack {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 18px;                    /* matches .osc-col-right so Drive/Filter/LFO row heights align with OSC */
 }
 
-/* Zone-internal layout (perf is the only zone with non-grid children
-   that still uses flex; vox/env zones are just fieldset frames now,
-   their content lives in body-absolute positions). */
-.perf-row {
+/* Labeled group — title above its control(s). Children are pinned to
+   the start of the cross-axis (left), so radio rows and LED toggles
+   keep their natural content width instead of stretching to fill the
+   column. */
+.psg-labeled-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.psg-group-label {
+  font-size: 13px;
+  line-height: 1.4;
+  min-height: 1.4em;            /* always reserve label height — empty label = even rhythm */
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.psg-led-row {
   display: flex;
   gap: 12px;
-  justify-content: center;
-  align-items: center;
+}
+
+/* The OSC zone is internally split into two columns by a partial
+   vertical rule (see RULES in layout.ts) that sits half-way across
+   the zone (body-x = 720). */
+.osc-columns {
+  display: flex;
   height: 100%;
+}
+
+/* Left column — OSC 1 only. The group's right edge lines up with the
+   right of column 4 (body-x = 640); padding-top pushes it down to
+   match the OSC 2 wave group in the right column (which sits below
+   the power switch). */
+.osc-col-left {
+  width: 372px;                 /* up to body-x=720, the partial rule */
+  padding-top: 50px;            /* power-row height + column gap */
+  padding-right: 80px;          /* group right edge → body-x = 640 */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;        /* right-align the OSC 1 group */
+}
+.osc-col-left .psg-labeled-group {
+  align-items: flex-end;        /* title + radios right-justified within the group */
+}
+
+/* Right column — OSC 2 power (centred), then OSC 2 wave / Octave /
+   Sync-Ring stacked. The labelled groups sit half a grid square in
+   from the partial rule; the power switch stays centred in the
+   column so it isn't pushed off centre by that margin. */
+.osc-col-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.osc-col-right > .psg-labeled-group {
+  margin-left: 80px;            /* half a grid square in from the rule */
+}
+
+/* OSC 2 power switch sits as its own row, centred in the right
+   column; the column gap above puts it 18 px below the top. */
+.osc-power-row {
+  display: flex;
+  justify-content: center;
 }
 
 /* ─── Voice screen container (label above canvas) ────────────────── */
@@ -404,36 +490,54 @@ button.led-toggle:disabled .led {
 }
 
 /* ─── Knob ───────────────────────────────────────────────────────── */
-
+/*
+ * The .knob wrapper is exactly canvas-sized, so when an <At> centres
+ * the wrapper on a grid cell the canvas centre lands dead-centre too.
+ * Label and value float outside (above and below) via absolute
+ * positioning, so they don't shift the canvas off-centre.
+ */
 .knob {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 112px;
+  position: relative;
+  display: block;
   user-select: none;
 }
 
+.knob-label,
+.knob-value {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 .knob-label {
+  bottom: 100%;
+  margin-bottom: 3px;
   font-size: 13px;
   color: var(--muted);
-  margin-top: 6px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .knob-value {
+  top: 100%;
+  margin-top: 3px;
   font-size: 12px;
   color: var(--text);
-  font-variant-numeric: tabular-nums;
 }
 
-/* ─── VSlider (vertical, with gradient + ticks + cap) ────────────── */
-
+/* ─── VSlider (vertical, with gradient track + protruding cap) ───── */
+/*
+ * Wrapper is sized to the track only (narrow). The cap is wider than
+ * the track and sticks out either side via negative left/right (set
+ * inline from JS to match the JS-side CAP_W). Label sits above and
+ * value below the track, both absolutely positioned to match the
+ * knob style.
+ */
 .vslider {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
+  position: relative;
+  display: block;
   user-select: none;
 }
 
@@ -442,9 +546,7 @@ button.led-toggle:disabled .led {
   background: linear-gradient(
     to right,
     #0d0a08 0%,
-    #1f1b18 25%,
-    #2a2622 50%,
-    #1f1b18 75%,
+    #1f1b18 50%,
     #0d0a08 100%
   );
   border: 1px solid var(--border);
@@ -456,36 +558,45 @@ button.led-toggle:disabled .led {
 /* The lit portion of the track (purple, partially transparent). */
 .vslider-fill {
   position: absolute;
-  left: 5px;
-  right: 5px;
+  left: 2px;
+  right: 2px;
   background: var(--accent);
   border-radius: 2px;
   opacity: 0.4;
   pointer-events: none;
 }
 
-/* The cap (handle) that slides up and down. */
+/* The cap (handle). Its left/right are set inline so it stays wider
+   than the narrow track and protrudes either side. */
 .vslider-cap {
   position: absolute;
-  left: -3px;
-  right: -3px;
   background: var(--text);
   border-radius: 3px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   pointer-events: none;
 }
 
+.vslider-label,
+.vslider-value {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
 .vslider-label {
+  bottom: 100%;
+  margin-bottom: 3px;
   font-size: 11px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-
 .vslider-value {
+  top: 100%;
+  margin-top: 3px;
   font-size: 11px;
   color: var(--text);
-  font-variant-numeric: tabular-nums;
 }
 
 /* Disabled state */
@@ -500,11 +611,13 @@ button.led-toggle:disabled .led {
 .button-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;                     /* matches .psg-labeled-group so labelled radios line up across the panel */
 }
 
 .button-group-label {
-  font-size: 11px;
+  font-size: 13px;              /* matches .psg-group-label so the Drive/Filter/LFO label slot has the same height as OSC titles */
+  line-height: 1.4;
+  min-height: 1.4em;            /* keep height when label is empty (used as a spacer to align radios across groups) */
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;

@@ -11,16 +11,18 @@ interface SliderProps {
   step?: number;
   /** Bipolar: fill draws from centre, double-click resets to centre. */
   bipolar?: boolean;
+  /** Track height in px. Defaults to 210; PSG grid uses ~280 (2 cells). */
+  trackHeight?: number;
   format?: (v: number) => string;
   disabled?: boolean;
   onChange: (v: number) => void;
 }
 
-const TRACK_W = 26;
-const TRACK_H = 210;
+const TRACK_W = 10;            // narrow track
+const CAP_W = 32;              // wider than the track — cap protrudes either side
+const CAP_EXTEND = (CAP_W - TRACK_W) / 2;   // 11
+const DEFAULT_TRACK_H = 210;
 const CAP_H = 18;
-const TRAVEL = TRACK_H - CAP_H;
-const SENSITIVITY_PX = TRACK_H; // px of drag = full range
 
 function toNormalized(value: number, min: number, max: number, log: boolean): number {
   if (log) return Math.log(value / min) / Math.log(max / min);
@@ -48,10 +50,15 @@ export function Slider({
   log = false,
   step,
   bipolar = false,
+  trackHeight = DEFAULT_TRACK_H,
   format,
   disabled = false,
   onChange
 }: SliderProps) {
+  const TRACK_H = trackHeight;
+  const TRAVEL = TRACK_H - CAP_H;
+  const SENSITIVITY_PX = TRACK_H; // px of drag = full range
+
   const dragRef = useRef<{ startY: number; startT: number } | null>(null);
 
   const onPointerDown = useCallback(
@@ -72,7 +79,7 @@ export function Slider({
       const newT = dragRef.current.startT - dy / sensitivity;
       onChange(fromNormalized(newT, min, max, log, step));
     },
-    [min, max, log, step, onChange]
+    [min, max, log, step, onChange, SENSITIVITY_PX]
   );
 
   const onPointerUp = useCallback(
@@ -109,7 +116,11 @@ export function Slider({
   }
 
   return (
-    <div className={disabled ? 'vslider disabled' : 'vslider'}>
+    <div
+      className={disabled ? 'vslider disabled' : 'vslider'}
+      style={{ width: TRACK_W, height: TRACK_H }}
+    >
+      <div className="vslider-label">{label}</div>
       <div
         className="vslider-track"
         style={{ width: TRACK_W, height: TRACK_H }}
@@ -123,9 +134,16 @@ export function Slider({
           className="vslider-fill"
           style={{ top: fillTop, height: fillH }}
         />
-        <div className="vslider-cap" style={{ top: capTop, height: CAP_H }} />
+        <div
+          className="vslider-cap"
+          style={{
+            top: capTop,
+            height: CAP_H,
+            left: -CAP_EXTEND,
+            right: -CAP_EXTEND
+          }}
+        />
       </div>
-      <div className="vslider-label">{label}</div>
       <div className="vslider-value">{format ? format(value) : value.toFixed(2)}</div>
     </div>
   );

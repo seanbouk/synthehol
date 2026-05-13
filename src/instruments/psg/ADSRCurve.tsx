@@ -60,7 +60,7 @@ export function ADSRCurve({
     ctx.stroke();
 
     // Envelope path
-    ctx.strokeStyle = '#a78bfa';
+    ctx.strokeStyle = '#f6a96b'; // --screen
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(xAt(0), yAt(0));
@@ -71,7 +71,7 @@ export function ADSRCurve({
     ctx.stroke();
 
     // Subtle fill
-    ctx.fillStyle = 'rgba(167, 139, 250, 0.08)';
+    ctx.fillStyle = 'rgba(246, 169, 107, 0.10)'; // --screen-soft
     ctx.lineTo(xAt(total), yAt(0));
     ctx.lineTo(xAt(0), yAt(0));
     ctx.fill();

@@ -1,15 +1,16 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { STAGE_W, STAGE_H } from './grid';
 
 /**
- * Fixed 2200×800 design surface, uniformly CSS-scaled to fit whatever
- * container it sits in. Children are absolutely positioned in stage
- * coordinates and never reflow — the whole stage just scales.
+ * Fixed 2240×800 design surface (14×5 cells × 160 px), uniformly CSS-
+ * scaled to fit whatever container it sits in. Children are absolutely
+ * positioned in stage coordinates and never reflow — the whole stage
+ * just scales.
  *
- * Base is 2200×800 (= 2.75:1) — picked so 1440p / ultrawide renders
- * around 1.5× (sharp at DPR=2) and 1080p sits at ~1.1×.
+ * Base is 2240×800 (= 2.8:1, 14:5) — picked so every PSG panel control
+ * lands on a 160 px grid cell.
  */
-export const STAGE_W = 2200;
-export const STAGE_H = 800;
+export { STAGE_W, STAGE_H };
 
 export function Stage({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);

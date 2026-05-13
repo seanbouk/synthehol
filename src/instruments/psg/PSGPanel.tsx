@@ -10,36 +10,41 @@ import type { PSGParams } from './psg-defaults';
 import { WaveformPreview } from './WaveformPreview';
 import { ADSRCurve } from './ADSRCurve';
 import { Stage } from './Stage';
+import { cellCentre } from './grid';
 import {
-  KNOB_COLS, KNOB_ROWS, ENV_AMT_X, VSLIDERS, VSLIDER_Y,
-  VOX_CHART_1_CX, VOX_CHART_2_CX, ENV_CHART_CX, CHART_Y,
-  ENV_CHART_WIDTH, ENV_CHART_HEIGHT
+  KNOBS,
+  VSLIDERS, VSLIDER_CY, VSLIDER_TRACK_HEIGHT,
+  VOX_CHART_1, VOX_CHART_2, VOX_CHART_WIDTH, VOX_CHART_HEIGHT,
+  ENV_CHART, ENV_CHART_WIDTH, ENV_CHART_HEIGHT,
+  RULES
 } from './layout';
+
+const PITCH_WHEEL = cellCentre(1, 3); // col 1 centre, vertical mid of body
+const MOD_WHEEL   = cellCentre(2, 3); // col 2 centre, vertical mid of body
 
 /**
  * PSG instrument panel.
  *
- * The fixed 2200×800 Stage hosts the body, which lays out fieldset
- * zones (perf, osc, drive, filter, lfo, vox, env). Zone-internal
- * controls (wave selectors, LEDs, pills, screens, ADSR curve) sit
- * inside their fields with the field-body's natural flex layout.
+ * The fixed 2240×800 Stage is a 14×5 grid of 160 px square cells. There
+ * are no fieldset boxes — section boundaries are drawn as thin teal
+ * rules between cells (see RULES in layout.ts). Controls anchor to cell
+ * centres or column boundaries; multi-control sections (osc/drive/
+ * filter/lfo) live inside an unframed .psg-zone wrapper that lays out
+ * their internal flex content.
  *
- * The 4×2 knob grid and the 4 vsliders are positioned ABSOLUTELY in
- * body coordinates (using the constants in ./layout.ts), free-floating
- * over the fields. That guarantees the grid IS a grid — every knob and
- * slider references the same axes, so a tweak to one mirror moves
- * everything in lockstep.
+ * The OSC zone is internally split into two columns — OSC 1 (left half)
+ * and OSC 2 plus its modifiers (right half), divided by a partial
+ * vertical rule that drops half-way down the zone.
+ *
+ * See `grid.ts`, `layout.ts`, and `refs/grid-sketch.svg` for the full
+ * layout — this file just wires positions to controls.
  */
 
-const OSC1_WAVE_OPTIONS = [
+const WAVE_OPTIONS = [
   { value: 0, label: 'Pulse' },
   { value: 1, label: 'Ramp' },
   { value: 2, label: 'Sine' },
   { value: 3, label: 'Noise' }
-];
-const OSC2_WAVE_OPTIONS = [
-  ...OSC1_WAVE_OPTIONS,
-  { value: 4, label: 'Off' }
 ];
 const OCTAVE_OPTIONS = [
   { value: -2, label: '−2' },
@@ -75,15 +80,6 @@ function fmtCents(v: number): string {
   return `${v >= 0 ? '+' : ''}${v.toFixed(0)} ¢`;
 }
 
-function Field({ title, children }: { title: string; children?: ReactNode }) {
-  return (
-    <div className="psg-field">
-      <div className="psg-field-title">{title}</div>
-      <div className="psg-field-body">{children}</div>
-    </div>
-  );
-}
-
 /** Absolute-position helper. (x, y) anchors to the child's centre. */
 function At({ x, y, children }: { x: number; y: number; children: ReactNode }) {
   return (
@@ -114,56 +110,64 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
     [deviceId, setParam]
   );
 
-  const osc2Off = params.osc2_wave === 4;
+  const osc2Off = !params.osc2_on;
 
   return (
     <Stage>
       <div className="psg-body">
 
-        {/* ── Zones: fieldsets with internal (non-grid) content ─────── */}
+        {/* ── Thin teal section rules (replace fieldset borders) ─────── */}
 
-        <div className="psg-zone perf">
-          <Field title="Wheels">
-            <div className="perf-row">
-              <Wheel
-                label="Pitch"
-                value={perf.bend}
-                min={-2} max={2} snapBack
-                onChange={(v) => setBend(deviceId, v)}
-                format={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)} st`}
-              />
-              <Wheel
-                label="Mod"
-                value={perf.modwheel}
-                min={0} max={1}
-                onChange={(v) => setModWheel(deviceId, v)}
-                format={(v) => v.toFixed(2)}
-              />
-            </div>
-          </Field>
-        </div>
+        {RULES.map((r, i) => {
+          const left = Math.min(r.x1, r.x2);
+          const top = Math.min(r.y1, r.y2);
+          const width = Math.max(1, r.x2 - r.x1);
+          const height = Math.max(1, r.y2 - r.y1);
+          return (
+            <div
+              key={i}
+              className="psg-rule"
+              style={{ left, top, width, height }}
+            />
+          );
+        })}
+
+        {/* ── Multi-control zones (unframed, just hold flex content) ── */}
 
         <div className="psg-zone osc">
-          <Field title="Oscillators">
-            <div className="psg-stack">
-              <div className="psg-row">
-                <span className="sub-label">OSC 1</span>
+          <div className="osc-columns">
+            {/* Left half — OSC 1. */}
+            <div className="osc-col-left">
+              <div className="psg-labeled-group">
+                <div className="psg-group-label">OSC 1</div>
                 <ButtonGroup
                   value={params.osc1_wave}
-                  options={OSC1_WAVE_OPTIONS}
+                  options={WAVE_OPTIONS}
                   onChange={(v) => set('osc1_wave', v)}
                 />
               </div>
-              <div className="psg-row">
-                <span className="sub-label">OSC 2</span>
+            </div>
+
+            {/* Right half — OSC 2 power, wave, octave, sync/ring. */}
+            <div className="osc-col-right">
+              <div className="osc-power-row">
+                <LEDToggle
+                  label="OSC 2"
+                  value={params.osc2_on}
+                  onChange={(v) => set('osc2_on', v)}
+                />
+              </div>
+              <div className="psg-labeled-group">
+                <div className="psg-group-label">OSC 2</div>
                 <ButtonGroup
                   value={params.osc2_wave}
-                  options={OSC2_WAVE_OPTIONS}
+                  options={WAVE_OPTIONS}
+                  disabled={osc2Off}
                   onChange={(v) => set('osc2_wave', v)}
                 />
               </div>
-              <div className="psg-row">
-                <span className="sub-label">Octave</span>
+              <div className="psg-labeled-group">
+                <div className="psg-group-label">Octave</div>
                 <ButtonGroup
                   value={params.osc2_octave}
                   options={OCTAVE_OPTIONS}
@@ -171,92 +175,109 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                   onChange={(v) => set('osc2_octave', v)}
                 />
               </div>
-              <div className="psg-row">
-                <LEDToggle
-                  label="Sync"
-                  value={params.sync_on}
-                  disabled={osc2Off}
-                  onChange={(v) => set('sync_on', v)}
-                />
-                <LEDToggle
-                  label="Ring"
-                  value={params.ring_on}
-                  warn
-                  disabled={osc2Off}
-                  onChange={(v) => set('ring_on', v)}
-                />
+              <div className="psg-labeled-group">
+                {/* Empty label keeps the vertical rhythm even with the
+                    groups above. */}
+                <div className="psg-group-label">{' '}</div>
+                <div className="psg-led-row">
+                  <LEDToggle
+                    label="Sync"
+                    value={params.sync_on}
+                    disabled={osc2Off}
+                    onChange={(v) => set('sync_on', v)}
+                  />
+                  <LEDToggle
+                    label="Ring"
+                    value={params.ring_on}
+                    warn
+                    disabled={osc2Off}
+                    onChange={(v) => set('ring_on', v)}
+                  />
+                </div>
               </div>
             </div>
-          </Field>
+          </div>
         </div>
 
         <div className="psg-zone drive">
-          <Field title="Drive">
-            <div className="psg-stack" style={{ alignItems: 'center' }}>
-              <LEDToggle
-                label="Drive"
-                value={params.drive_on}
-                warn
-                onChange={(v) => set('drive_on', v)}
-              />
-              <ButtonGroup
-                value={params.drive_type}
-                options={DRIVE_OPTIONS}
-                disabled={!params.drive_on}
-                onChange={(v) => set('drive_type', v)}
-              />
-            </div>
-          </Field>
+          <div className="psg-stack" style={{ alignItems: 'center' }}>
+            <LEDToggle
+              label="Drive"
+              value={params.drive_on}
+              warn
+              onChange={(v) => set('drive_on', v)}
+            />
+            {/* Empty label reserves the same vertical slot as LFO's
+                "Destination" label so the Soft/Fold radios line up
+                with the LFO destination radios. */}
+            <ButtonGroup
+              label=""
+              value={params.drive_type}
+              options={DRIVE_OPTIONS}
+              disabled={!params.drive_on}
+              onChange={(v) => set('drive_type', v)}
+            />
+          </div>
         </div>
 
         <div className="psg-zone filt">
-          <Field title="Filter">
-            <div className="psg-stack" style={{ alignItems: 'center' }}>
-              <LEDToggle
-                label="Filter"
-                value={params.filter_on}
-                onChange={(v) => set('filter_on', v)}
-              />
-              <ButtonGroup
-                value={params.filter_mode}
-                options={FILTER_OPTIONS}
-                disabled={!params.filter_on}
-                onChange={(v) => set('filter_mode', v)}
-              />
-            </div>
-          </Field>
+          <div className="psg-stack" style={{ alignItems: 'center' }}>
+            <LEDToggle
+              label="Filter"
+              value={params.filter_on}
+              onChange={(v) => set('filter_on', v)}
+            />
+            <ButtonGroup
+              label=""
+              value={params.filter_mode}
+              options={FILTER_OPTIONS}
+              disabled={!params.filter_on}
+              onChange={(v) => set('filter_mode', v)}
+            />
+          </div>
         </div>
 
         <div className="psg-zone lfo">
-          <Field title="LFO">
-            <div className="psg-stack" style={{ alignItems: 'center' }}>
-              <LEDToggle
-                label="LFO"
-                value={params.lfo_on}
-                onChange={(v) => set('lfo_on', v)}
-              />
-              <ButtonGroup
-                label="Destination"
-                value={params.lfo_dest}
-                options={LFO_DEST_OPTIONS}
-                disabled={!params.lfo_on}
-                onChange={(v) => set('lfo_dest', v)}
-              />
-            </div>
-          </Field>
+          <div className="psg-stack" style={{ alignItems: 'center' }}>
+            <LEDToggle
+              label="LFO"
+              value={params.lfo_on}
+              onChange={(v) => set('lfo_on', v)}
+            />
+            <ButtonGroup
+              label="Destination"
+              value={params.lfo_dest}
+              options={LFO_DEST_OPTIONS}
+              disabled={!params.lfo_on}
+              onChange={(v) => set('lfo_dest', v)}
+            />
+          </div>
         </div>
 
-        <div className="psg-zone vox">
-          <Field title="Voice" />
-        </div>
+        {/* ── Wheels, centred on cols 1 and 2 ─────────────────────────── */}
 
-        <div className="psg-zone env">
-          <Field title="Envelope" />
-        </div>
+        <At x={PITCH_WHEEL.x} y={PITCH_WHEEL.y}>
+          <Wheel
+            label="Pitch"
+            value={perf.bend}
+            min={-2} max={2} snapBack
+            onChange={(v) => setBend(deviceId, v)}
+            format={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)} st`}
+          />
+        </At>
+        <At x={MOD_WHEEL.x} y={MOD_WHEEL.y}>
+          <Wheel
+            label="Mod"
+            value={perf.modwheel}
+            min={0} max={1}
+            onChange={(v) => setModWheel(deviceId, v)}
+            format={(v) => v.toFixed(2)}
+          />
+        </At>
 
-        {/* ── 4×2 knob grid, body-absolute, referencing layout.ts ───── */}
+        {/* ── Top-row knobs (row 4): shape / drive / cutoff / reso / env-amt ── */}
 
-        <At x={KNOB_COLS.c1} y={KNOB_ROWS.r1}>
+        <At x={KNOBS.shape.x} y={KNOBS.shape.y}>
           <Knob
             label="Shape"
             value={params.shape}
@@ -265,7 +286,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={(v) => v.toFixed(2)}
           />
         </At>
-        <At x={KNOB_COLS.c2} y={KNOB_ROWS.r1}>
+        <At x={KNOBS.drive.x} y={KNOBS.drive.y}>
           <Knob
             label="Drive"
             value={params.drive}
@@ -275,7 +296,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={(v) => v.toFixed(2)}
           />
         </At>
-        <At x={KNOB_COLS.c3} y={KNOB_ROWS.r1}>
+        <At x={KNOBS.cutoff.x} y={KNOBS.cutoff.y}>
           <Knob
             label="Cutoff"
             value={params.cutoff}
@@ -285,7 +306,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={fmtHz}
           />
         </At>
-        <At x={KNOB_COLS.c4} y={KNOB_ROWS.r1}>
+        <At x={KNOBS.reso.x} y={KNOBS.reso.y}>
           <Knob
             label="Reso"
             value={params.resonance}
@@ -295,9 +316,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={(v) => v.toFixed(2)}
           />
         </At>
-
-        {/* 9th knob — Filter Env Amount sits one column step right of Reso. */}
-        <At x={ENV_AMT_X} y={KNOB_ROWS.r1}>
+        <At x={KNOBS.envAmt.x} y={KNOBS.envAmt.y}>
           <Knob
             label="Env amt"
             value={params.filter_env_amount}
@@ -308,7 +327,9 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
           />
         </At>
 
-        <At x={KNOB_COLS.c1} y={KNOB_ROWS.r2}>
+        {/* ── ADSR knobs (row 5): attack / decay / sustain / release ── */}
+
+        <At x={KNOBS.attack.x} y={KNOBS.attack.y}>
           <Knob
             label="Attack"
             value={params.attack}
@@ -317,7 +338,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={fmtMs}
           />
         </At>
-        <At x={KNOB_COLS.c2} y={KNOB_ROWS.r2}>
+        <At x={KNOBS.decay.x} y={KNOBS.decay.y}>
           <Knob
             label="Decay"
             value={params.decay}
@@ -326,7 +347,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={fmtMs}
           />
         </At>
-        <At x={KNOB_COLS.c3} y={KNOB_ROWS.r2}>
+        <At x={KNOBS.sustain.x} y={KNOBS.sustain.y}>
           <Knob
             label="Sustain"
             value={params.sustain}
@@ -335,7 +356,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={(v) => v.toFixed(2)}
           />
         </At>
-        <At x={KNOB_COLS.c4} y={KNOB_ROWS.r2}>
+        <At x={KNOBS.release.x} y={KNOBS.release.y}>
           <Knob
             label="Release"
             value={params.release}
@@ -345,56 +366,61 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
           />
         </At>
 
-        {/* ── 4 vsliders, body-absolute, mirrored around X_MIRROR ───── */}
+        {/* ── Vsliders on column boundaries, 2 cells tall (rows 2–3) ── */}
 
-        <At x={VSLIDERS.mix} y={VSLIDER_Y}>
+        <At x={VSLIDERS.mix} y={VSLIDER_CY}>
           <Slider
             label="Mix"
             value={params.osc_mix}
             min={0} max={1} step={0.01}
             bipolar
+            trackHeight={VSLIDER_TRACK_HEIGHT}
             disabled={osc2Off}
             onChange={(v) => set('osc_mix', v)}
             format={(v) => `${Math.round((1 - v) * 100)} / ${Math.round(v * 100)}`}
           />
         </At>
-        <At x={VSLIDERS.detune} y={VSLIDER_Y}>
+        <At x={VSLIDERS.detune} y={VSLIDER_CY}>
           <Slider
             label="Detune"
             value={params.osc2_detune}
             min={-50} max={50} step={0.5}
             bipolar
+            trackHeight={VSLIDER_TRACK_HEIGHT}
             disabled={osc2Off}
             onChange={(v) => set('osc2_detune', v)}
             format={fmtCents}
           />
         </At>
-        <At x={VSLIDERS.depth} y={VSLIDER_Y}>
+        <At x={VSLIDERS.depth} y={VSLIDER_CY}>
           <Slider
             label="Depth"
             value={params.lfo_depth}
             min={0} max={1} step={0.01}
+            trackHeight={VSLIDER_TRACK_HEIGHT}
             disabled={!params.lfo_on}
             onChange={(v) => set('lfo_depth', v)}
             format={(v) => v.toFixed(2)}
           />
         </At>
-        <At x={VSLIDERS.rate} y={VSLIDER_Y}>
+        <At x={VSLIDERS.rate} y={VSLIDER_CY}>
           <Slider
             label="Rate"
             value={params.lfo_rate}
             min={0.1} max={20} log
+            trackHeight={VSLIDER_TRACK_HEIGHT}
             disabled={!params.lfo_on}
             onChange={(v) => set('lfo_rate', v)}
             format={(v) => `${v.toFixed(2)} Hz`}
           />
         </At>
 
-        {/* ── Voice charts (left) + Envelope chart (right of mirror) ── */}
+        {/* ── Voice charts (cells 3–4 / 5–6, row 5) + Envelope chart (cells 11–14, row 5) ── */}
 
-        <At x={VOX_CHART_1_CX} y={CHART_Y}>
+        <At x={VOX_CHART_1.x} y={VOX_CHART_1.y}>
           <WaveformPreview
             osc1_wave={params.osc1_wave}
+            osc2_on={params.osc2_on}
             osc2_wave={params.osc2_wave}
             shape={params.shape}
             osc_mix={params.osc_mix}
@@ -405,12 +431,14 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             drive={params.drive}
             drive_type={params.drive_type}
             phaseLead={0}
-            label="Now"
+            width={VOX_CHART_WIDTH}
+            height={VOX_CHART_HEIGHT}
           />
         </At>
-        <At x={VOX_CHART_2_CX} y={CHART_Y}>
+        <At x={VOX_CHART_2.x} y={VOX_CHART_2.y}>
           <WaveformPreview
             osc1_wave={params.osc1_wave}
+            osc2_on={params.osc2_on}
             osc2_wave={params.osc2_wave}
             shape={params.shape}
             osc_mix={params.osc_mix}
@@ -421,10 +449,11 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             drive={params.drive}
             drive_type={params.drive_type}
             phaseLead={8}
-            label="+Δt"
+            width={VOX_CHART_WIDTH}
+            height={VOX_CHART_HEIGHT}
           />
         </At>
-        <At x={ENV_CHART_CX} y={CHART_Y}>
+        <At x={ENV_CHART.x} y={ENV_CHART.y}>
           <ADSRCurve
             attack={params.attack}
             decay={params.decay}

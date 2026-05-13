@@ -1,189 +1,176 @@
 /**
- * PSG panel geometry — single source of truth.
+ * PSG panel layout — every position derived from the 14×5 grid.
  *
- * All values are in body-relative pixels (the `.psg-body` element sits
- * inside the 2200×800 Stage at top:21, left:32 — its inside coords are
- * what these numbers refer to). Components position themselves against
- * these constants so the grid is provably a grid: shifting an axis or
- * row here moves every dependent control in lockstep.
+ * Read alongside `refs/grid-sketch.svg` and `grid.ts`. Each zone is
+ * described as a cell rectangle, each control as a cell centre or a
+ * column/row boundary. No raw pixel offsets live here.
  *
- * The layout has two mirror axes:
+ * Grid summary (cells are 1-indexed, 160 px square):
  *
- *   X_MIRROR — vertical line, halfway between the left of the Oscillators
- *              / Voice column and the right of the body. The 4-column
- *              knob grid, the four vsliders, and the voice/envelope chart
- *              bboxes all mirror around it.
+ *     col      1   2   3   4   5   6   7   8   9  10  11  12  13  14
+ *     row 1  ┌─P─┬─P─┬─────── OSC ───────┬─D─┬─FILTER─┬───── LFO ────┐
+ *     row 2  │       │                   │   │        │              │
+ *     row 3  │ wheels│                   │   │        │              │
+ *     row 4  │       │                   │   │        │              │
+ *     row 5  └─P─┴─P─┴── VOX ─┬─── ADSR knobs ───┬── ENV chart ──────┘
  *
- *   Y_MIRROR — horizontal line, between the top and bottom rows of
- *              fieldsets. The 4×2 knob grid mirrors around it.
+ *   • wheels:       col 1, col 2          (rows 1–5, centred each col)
+ *   • oscillators:  cells (3,1)–(7,4)
+ *   • drive:        cell  (8,1)–(8,4)
+ *   • filter:       cells (9,1)–(11,4)
+ *   • LFO:          cells (12,1)–(14,4)
+ *   • voice charts: row 5 — chart 1 at cells (3,5)–(4,5), chart 2 at (5,5)–(6,5)
+ *   • ADSR knobs:   row 5, columns 7..10 (cell centres)
+ *   • envelope:     cells (11,5)–(14,5)
  *
- * Drive / Filter / Osc zone boundaries are derived from the knob
- * column positions:
- *   drive box is centred on the Drive knob (COL2), with its left/right
- *   borders at the midpoints between (Shape, Drive) and (Drive, Cutoff).
+ *   • top knobs (row 4, cell centres):
+ *       shape c7, drive c8, cutoff c9, reso c10, env-amt c11
  *
- * Vsliders are centred horizontally in the LFO box: rate sits INSET
- * from LFO's right edge, depth is the mirror of rate around LFO_CX,
- * so the midpoint of (depth, rate) lands exactly on LFO_CX. Mix and
- * Detune fall out as mirrors of Rate and Depth around X_MIRROR.
+ *   • vsliders (rows 2–3, sitting on column boundaries):
+ *       mix    c3 | c4
+ *       detune c4 | c5
+ *       depth  c12 | c13
+ *       rate   c13 | c14
  */
 
-// ──────────────────────────────────────────────────────────────────
-// Mirror axes
-// ──────────────────────────────────────────────────────────────────
-
-/** Halfway between the left of the Oscillators / Voice column (203)
- *  and the right of the body (2136). */
-export const X_MIRROR = 1169.5;
-
-/** Between top zones (end at 507) and bottom zones (start at 523). */
-export const Y_MIRROR = 515;
+import { CELL, cellCentre, cellRect, colLeft, colRight, rowTop, rowBottom } from './grid';
 
 // ──────────────────────────────────────────────────────────────────
-// Knob grid: 4 columns × 2 rows
-// ──────────────────────────────────────────────────────────────────
-
-/** Horizontal spacing between adjacent knob columns.
- *  173.25 = 231 × 0.75 (original spacing reduced by 25%). */
-export const KNOB_COL_SPACING = 173.25;
-
-const KNOB_HALF_INNER = KNOB_COL_SPACING / 2;       // 86.625  — col 2 / col 3
-const KNOB_HALF_OUTER = KNOB_HALF_INNER * 3;        // 259.875 — col 1 / col 4
-
-/** Column centres (X), in body coords. */
-export const KNOB_COLS = {
-  c1: X_MIRROR - KNOB_HALF_OUTER, // 909.625  — bottom-right of Oscillators
-  c2: X_MIRROR - KNOB_HALF_INNER, // 1082.875 — centre of Drive
-  c3: X_MIRROR + KNOB_HALF_INNER, // 1256.125 — left half of Filter
-  c4: X_MIRROR + KNOB_HALF_OUTER  // 1429.375 — right half of Filter
-} as const;
-
-/** Filter Env-Amount knob — sits one full column step to the right of
- *  Reso. Outside the main 4×2 grid; row 1 only. */
-export const ENV_AMT_X = KNOB_COLS.c4 + KNOB_COL_SPACING; // 1602.625
-
-/** Vertical half-gap between Y_MIRROR and a knob row centre.
- *  112.5 = 75 × 1.5 (original gap increased by 50%). */
-export const KNOB_ROW_HALF_GAP = 112.5;
-
-/** Row centres (Y), in body coords. */
-export const KNOB_ROWS = {
-  r1: Y_MIRROR - KNOB_ROW_HALF_GAP, // 402.5 — top row (Shape/Drive/Cutoff/Reso)
-  r2: Y_MIRROR + KNOB_ROW_HALF_GAP  // 627.5 — bottom row (Attack/Decay/Sustain/Release)
-} as const;
-
-// ──────────────────────────────────────────────────────────────────
-// Zone X-positions — derived from knob columns and a uniform gap.
-// ──────────────────────────────────────────────────────────────────
-
-/** Uniform horizontal gap between adjacent fieldset boxes — set to
- *  match the existing filter/lfo gap. */
-export const ZONE_GAP = 16;
-const HALF_GAP = ZONE_GAP / 2;
-
-/** Gap centres (between adjacent knob columns).
- *  Each zone border sits HALF_GAP away from the relevant gap centre,
- *  so the actual gap between adjacent boxes is always exactly ZONE_GAP. */
-const GAP_OSC_DRIVE   = (KNOB_COLS.c1 + KNOB_COLS.c2) / 2;  // 996.25  — mid(Shape, Drive)
-const GAP_DRIVE_FILT  = (KNOB_COLS.c2 + KNOB_COLS.c3) / 2;  // 1169.5  — mid(Drive, Cutoff) (= X_MIRROR)
-
-/** Drive box — centred on COL2; borders sit HALF_GAP off the gap
- *  centres so the actual gap to neighbour boxes is ZONE_GAP. */
-export const DRIVE_LEFT = GAP_OSC_DRIVE + HALF_GAP;            // 1004.25
-export const DRIVE_RIGHT = GAP_DRIVE_FILT - HALF_GAP;          // 1161.5
-export const DRIVE_WIDTH = DRIVE_RIGHT - DRIVE_LEFT;           // 157.25
-
-/** Filter — left follows the drive/filter seam; right is set so the
- *  Reso knob (COL4) sits exactly in the centre of the filter box. */
-export const FILTER_LEFT = GAP_DRIVE_FILT + HALF_GAP;          // 1177.5
-export const FILTER_RIGHT = 2 * KNOB_COLS.c4 - FILTER_LEFT;    // 1681.25
-export const FILTER_WIDTH = FILTER_RIGHT - FILTER_LEFT;        // 503.75
-
-/** Oscillators — right edge sits HALF_GAP before the osc/drive gap
- *  centre. Left edge unchanged. */
-export const OSC_LEFT = 203;
-export const OSC_RIGHT = GAP_OSC_DRIVE - HALF_GAP;             // 988.25
-export const OSC_WIDTH = OSC_RIGHT - OSC_LEFT;                 // 785.25
-
-/** LFO — left follows from filter's right (one ZONE_GAP across). */
-export const LFO_LEFT = FILTER_RIGHT + ZONE_GAP;               // 1697.25
-export const LFO_RIGHT = 2136;
-export const LFO_WIDTH = LFO_RIGHT - LFO_LEFT;                 // 438.75
-export const LFO_CX = (LFO_LEFT + LFO_RIGHT) / 2;              // 1916.625
-
-// ──────────────────────────────────────────────────────────────────
-// Vsliders — 4 sliders mirrored around X_MIRROR.
+// Zone cell rectangles (in body coords).
 // ──────────────────────────────────────────────────────────────────
 //
-// Depth and Rate sit symmetrically around LFO_CX. Mix and Detune are
-// the mirror images of Rate and Depth around X_MIRROR. Half-spacing
-// from LFO_CX = ((LFO_WIDTH/2 - inset)) — here picked so the gap
-// between Depth and Rate is ~1/3 less than at the previous step
-// (181.33 apart instead of 272).
+// Sections aren't framed anymore — each zone is just a logical region
+// of the grid that hosts controls. Visual separation between sections
+// comes from the thin RULES defined below, not from fieldset borders.
+// These rects are kept as a documentation/reference; runtime layout
+// CSS reads positions and sizes directly.
 
-const VSLIDER_HALF_SPACING = 90.667;            // distance from LFO_CX to depth or rate
-const RATE_X = LFO_CX + VSLIDER_HALF_SPACING;   // 2007.292
-const DEPTH_X = LFO_CX - VSLIDER_HALF_SPACING;  // 1825.958
+export const PERF_RECT   = cellRect(1, 1, 2, 5);   //   0,   0, 320, 800
+export const OSC_RECT    = cellRect(3, 1, 7, 4);   // 320,   0, 800, 640
+export const DRIVE_RECT  = cellRect(8, 1, 8, 4);   // 1120,  0, 160, 640
+export const FILTER_RECT = cellRect(9, 1, 11, 4);  // 1280,  0, 480, 640
+export const LFO_RECT    = cellRect(12, 1, 14, 4); // 1760,  0, 480, 640
+export const ENVCTL_RECT = cellRect(7, 5, 10, 5);  // 960, 640, 640, 160
+
+// Voice charts and the envelope display are unboxed canvases — they
+// fill their cells in row 5 with no zone wrapper.
+
+// ──────────────────────────────────────────────────────────────────
+// Section rules — thin teal lines between adjacent sections.
+// ──────────────────────────────────────────────────────────────────
+//
+// Each rule sits on a column or row boundary. Rules stop short of any
+// perpendicular rule (and of the panel edge) by RULE_INSET so they
+// never visually touch each other.
+
+/** Inset from any panel edge or perpendicular rule. */
+export const RULE_INSET = 12;
+
+type Rule = { x1: number; y1: number; x2: number; y2: number };
+
+const vRule = (x: number, top: number, bottom: number): Rule => ({
+  x1: x,
+  y1: top + RULE_INSET,
+  x2: x,
+  y2: bottom - RULE_INSET
+});
+
+const hRule = (y: number, left: number, right: number): Rule => ({
+  x1: left + RULE_INSET,
+  y1: y,
+  x2: right - RULE_INSET,
+  y2: y
+});
+
+/** All section-boundary rules, in render order. */
+export const RULES: readonly Rule[] = [
+  // Vertical — perf | osc, full panel height (passes through where the
+  // horizontal rule starts; H starts inset right of this column so they
+  // don't intersect).
+  vRule(colRight(2), rowTop(1), rowBottom(5)),
+
+  // Vertical — osc | drive | filter | lfo, top zones only (rows 1..4).
+  vRule(colRight(7),  rowTop(1), rowBottom(4)),
+  vRule(colRight(8),  rowTop(1), rowBottom(4)),
+  vRule(colRight(11), rowTop(1), rowBottom(4)),
+
+  // Vertical — row 5 only: voice screens | envelope controls | env display.
+  vRule(colRight(6),  rowTop(5), rowBottom(5)),
+  vRule(colRight(10), rowTop(5), rowBottom(5)),
+
+  // Horizontal — row 4 / row 5 boundary, spanning the right of perf to
+  // the right of lfo. Starts inset right of the perf|osc vertical so
+  // they don't meet at a corner.
+  hRule(rowBottom(4), colLeft(3), colRight(14)),
+
+  // Partial vertical, inside the OSC zone — separates OSC 1 (left) from
+  // OSC 2 (right). Sits halfway across the OSC zone (its x falls between
+  // grid columns, which is fine — it's an intra-zone rule, not a section
+  // boundary). Drops about half-way down the OSC zone.
+  vRule(
+    (colLeft(3) + colRight(7)) / 2,          // OSC midpoint: 720
+    rowTop(1),
+    rowTop(1) + (rowBottom(4) - rowTop(1)) / 2
+  )
+] as const;
+
+// ──────────────────────────────────────────────────────────────────
+// Knob positions — cell centres.
+// ──────────────────────────────────────────────────────────────────
+//
+// Top row (row 4): shape / drive / cutoff / reso / env-amt
+// Bottom row (row 5): attack / decay / sustain / release
+
+export const KNOBS = {
+  shape:   cellCentre(7,  4), // 1040, 560
+  drive:   cellCentre(8,  4), // 1200, 560
+  cutoff:  cellCentre(9,  4), // 1360, 560
+  reso:    cellCentre(10, 4), // 1520, 560
+  envAmt:  cellCentre(11, 4), // 1680, 560
+  attack:  cellCentre(7,  5), // 1040, 720
+  decay:   cellCentre(8,  5), // 1200, 720
+  sustain: cellCentre(9,  5), // 1360, 720
+  release: cellCentre(10, 5)  // 1520, 720
+} as const;
+
+// ──────────────────────────────────────────────────────────────────
+// Vsliders — sit on column boundaries, 2 cells tall, shifted half
+// a grid square below the rows 2–3 band so they hang more under the
+// top-row knobs than over them.
+// ──────────────────────────────────────────────────────────────────
+
+const VSLIDER_OFFSET = CELL / 2;                 // 80 px — half a grid cell
+export const VSLIDER_TOP = rowTop(2) + VSLIDER_OFFSET;    // 240
+export const VSLIDER_BOTTOM = rowBottom(3) + VSLIDER_OFFSET; // 560
+export const VSLIDER_TRACK_HEIGHT = VSLIDER_BOTTOM - VSLIDER_TOP; // 320
+export const VSLIDER_CY = (VSLIDER_TOP + VSLIDER_BOTTOM) / 2;     // 400
 
 export const VSLIDERS = {
-  mix:    2 * X_MIRROR - RATE_X,                // 331.708 — mirror of RATE
-  detune: 2 * X_MIRROR - DEPTH_X,               // 513.042 — mirror of DEPTH
-  depth:  DEPTH_X,                              // 1825.958
-  rate:   RATE_X                                // 2007.292
+  mix:    colRight(3),  // 480
+  detune: colRight(4),  // 640
+  depth:  colRight(12), // 1920
+  rate:   colRight(13)  // 2080
 } as const;
 
-/** Single Y centre for all four vsliders. */
-export const VSLIDER_Y = 340;
-
 // ──────────────────────────────────────────────────────────────────
-// Bottom-row zones
+// Voice and envelope charts.
 // ──────────────────────────────────────────────────────────────────
 //
-// Env zone's LEFT edge sits the same distance from its first knob
-// (Attack, COL1) as Drive zone's left edge sits from the Drive knob
-// (COL2). Vox's right edge follows by the standard ZONE_GAP.
+// Each voice chart is 2×1 cells (320×160). The envelope chart is 4×1
+// cells (640×160). All sit in row 5, centred in their cell rectangles.
 
-/** Drive box inset — distance from the left edge of the drive zone to
- *  the centre of the drive knob. Reused as the inset for env's left
- *  edge relative to Attack's centre. */
-const DRIVE_BOX_INSET = KNOB_COLS.c2 - DRIVE_LEFT;        // 78.625
+const rectCentre = (r: { x: number; y: number; width: number; height: number }) =>
+  ({ x: r.x + r.width / 2, y: r.y + r.height / 2 });
 
-export const VOX_LEFT = OSC_LEFT;                          // 203
-export const ENV_LEFT = KNOB_COLS.c1 - DRIVE_BOX_INSET;    // 831 — same inset as drive's
-export const VOX_RIGHT = ENV_LEFT - ZONE_GAP;              // 815
-export const ENV_RIGHT = LFO_RIGHT;                        // 2136
-export const VOX_WIDTH = VOX_RIGHT - VOX_LEFT;             // 612
+const VOX_CHART_1_RECT = cellRect(3, 5, 4, 5);   // 320,640,320,160
+const VOX_CHART_2_RECT = cellRect(5, 5, 6, 5);   // 640,640,320,160
+const ENV_CHART_RECT   = cellRect(11, 5, 14, 5); // 1600,640,640,160
 
-// ──────────────────────────────────────────────────────────────────
-// Voice and Envelope chart geometry
-// ──────────────────────────────────────────────────────────────────
-//
-// Voice has two side-by-side waveform charts inside vox with a small
-// gap between them. The user-stated rule: charts are horizontally
-// centred in vox with equal space on either side and between them
-// (so vox_width = 2 × chart_width + 3 × shared_gap). With chart width
-// fixed at 300 and vox at 612, the shared gap works out to 4 px.
-//
-// Env chart is a single canvas whose bounding box is the mirror image
-// of the voice bbox around X_MIRROR.
+export const VOX_CHART_WIDTH = VOX_CHART_1_RECT.width;   // 320
+export const VOX_CHART_HEIGHT = VOX_CHART_1_RECT.height; // 160
+export const VOX_CHART_1 = rectCentre(VOX_CHART_1_RECT); //  480, 720
+export const VOX_CHART_2 = rectCentre(VOX_CHART_2_RECT); //  800, 720
 
-export const VOX_CHART_WIDTH = 300;
-export const VOX_CHART_HEIGHT = 180;
-export const VOX_CHART_GAP = (VOX_WIDTH - 2 * VOX_CHART_WIDTH) / 3;   // 4
-export const VOX_BBOX_WIDTH = 2 * VOX_CHART_WIDTH + VOX_CHART_GAP;    // 604
-
-export const VOX_BBOX_LEFT = VOX_LEFT + VOX_CHART_GAP;                 // 207
-export const VOX_BBOX_RIGHT = VOX_BBOX_LEFT + VOX_BBOX_WIDTH;          // 811
-
-export const VOX_CHART_1_CX = VOX_BBOX_LEFT + VOX_CHART_WIDTH / 2;     // 357
-export const VOX_CHART_2_CX = VOX_BBOX_RIGHT - VOX_CHART_WIDTH / 2;    // 661
-
-/** Env chart bbox is the mirror image of the voice bbox around X_MIRROR. */
-export const ENV_CHART_LEFT = 2 * X_MIRROR - VOX_BBOX_RIGHT;   // 1528
-export const ENV_CHART_RIGHT = 2 * X_MIRROR - VOX_BBOX_LEFT;   // 2132
-export const ENV_CHART_WIDTH = VOX_BBOX_WIDTH;                 // 604
-export const ENV_CHART_HEIGHT = VOX_CHART_HEIGHT;              // 180
-export const ENV_CHART_CX = (ENV_CHART_LEFT + ENV_CHART_RIGHT) / 2; // 1830
-
-/** Y centre for voice and envelope charts (in body coords). */
-export const CHART_Y = 640;
+export const ENV_CHART_WIDTH = ENV_CHART_RECT.width;     // 640
+export const ENV_CHART_HEIGHT = ENV_CHART_RECT.height;   // 160
+export const ENV_CHART = rectCentre(ENV_CHART_RECT);     // 1920, 720
