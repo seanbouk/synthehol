@@ -135,25 +135,25 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
         {/* ── Multi-control zones (unframed, just hold flex content) ── */}
 
         <div className="psg-zone osc">
-          <div className="psg-stack">
-            <div className="psg-row">
-              <span className="sub-label">OSC 1</span>
+          <div className="psg-stack osc-stack">
+            <div className="psg-labeled-group">
+              <div className="psg-group-label">OSC 1</div>
               <ButtonGroup
                 value={params.osc1_wave}
                 options={OSC1_WAVE_OPTIONS}
                 onChange={(v) => set('osc1_wave', v)}
               />
             </div>
-            <div className="psg-row">
-              <span className="sub-label">OSC 2</span>
+            <div className="psg-labeled-group">
+              <div className="psg-group-label">OSC 2</div>
               <ButtonGroup
                 value={params.osc2_wave}
                 options={OSC2_WAVE_OPTIONS}
                 onChange={(v) => set('osc2_wave', v)}
               />
             </div>
-            <div className="psg-row">
-              <span className="sub-label">Octave</span>
+            <div className="psg-labeled-group">
+              <div className="psg-group-label">OSC 2 octave</div>
               <ButtonGroup
                 value={params.osc2_octave}
                 options={OCTAVE_OPTIONS}
@@ -161,8 +161,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                 onChange={(v) => set('osc2_octave', v)}
               />
             </div>
-            <div className="psg-row">
-              <span className="sub-label" />
+            <div className="psg-led-row">
               <LEDToggle
                 label="Sync"
                 value={params.sync_on}

@@ -4,6 +4,7 @@ import { PSGPanel } from '../../instruments/psg/PSGPanel';
 
 export function DeviceTab({ deviceId }: { deviceId: string }) {
   const device = useAppStore((s) => s.devices.find((d) => d.id === deviceId));
+  const detailsOpen = useAppStore((s) => s.deviceDetailsOpen);
 
   if (!device) {
     return (
@@ -18,14 +19,19 @@ export function DeviceTab({ deviceId }: { deviceId: string }) {
 
   return (
     <div className="device-tab">
-      <div className="panel device-header">
-        <div>
-          <h2>{device.name}</h2>
-          <p className="muted">
-            {device.manufacturer} · state: {device.state} · connection: {device.connection}
-          </p>
+      <div
+        className={detailsOpen ? 'device-details open' : 'device-details'}
+        aria-hidden={!detailsOpen}
+      >
+        <div className="panel device-header">
+          <div>
+            <h2>{device.name}</h2>
+            <p className="muted">
+              {device.manufacturer} · state: {device.state} · connection: {device.connection}
+            </p>
+          </div>
+          <button className="secondary" onClick={panic}>Panic</button>
         </div>
-        <button className="secondary" onClick={panic}>Panic</button>
       </div>
 
       <div className="device-stage-wrap">

@@ -4,7 +4,7 @@ import type { TabId } from '../../state/app-store';
 export function TabBar() {
   const devices = useAppStore((s) => s.devices);
   const activeTab = useAppStore((s) => s.activeTab);
-  const setActive = useAppStore((s) => s.setActiveTab);
+  const onClick = useAppStore((s) => s.onTabClick);
 
   const isActive = (tab: TabId) => {
     if (typeof tab === 'string' && typeof activeTab === 'string') return tab === activeTab;
@@ -18,18 +18,18 @@ export function TabBar() {
 
   return (
     <nav className="tabbar">
-      <button className={tabClass('home')} onClick={() => setActive('home')}>🏠 Home</button>
-      <button className={tabClass('drums')} onClick={() => setActive('drums')}>🥁 Drums</button>
-      <button className={tabClass('bass')} onClick={() => setActive('bass')}>🎸 Bass</button>
+      <button className={tabClass('home')} onClick={() => onClick('home')}>🏠 Home</button>
+      <button className={tabClass('drums')} onClick={() => onClick('drums')}>🥁 Drums</button>
+      <button className={tabClass('bass')} onClick={() => onClick('bass')}>🎸 Bass</button>
       {devices.map((d) => {
         const tab: TabId = { kind: 'device', deviceId: d.id };
         return (
-          <button key={d.id} className={tabClass(tab)} onClick={() => setActive(tab)}>
+          <button key={d.id} className={tabClass(tab)} onClick={() => onClick(tab)}>
             🎮 {d.name}
           </button>
         );
       })}
-      <button className={tabClass('output')} onClick={() => setActive('output')}>🎛️ Output</button>
+      <button className={tabClass('output')} onClick={() => onClick('output')}>🎛️ Output</button>
     </nav>
   );
 }

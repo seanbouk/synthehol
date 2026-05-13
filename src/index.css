@@ -146,13 +146,29 @@ code {
 
 /* ─── Device tab + PSG panel ────────────────────────────────────── */
 
-/* The device tab fills the full available height below the header so
-   the PSG stage can pick a large render size. */
+/* The device tab fills the full available height below the slide-down
+   header so the PSG stage can pick a large render size. */
 .device-tab {
   display: flex;
   flex-direction: column;
-  gap: 16px;
   height: 100%;
+}
+
+/* Slide-down container for the device header. Re-clicking the active
+   device tab toggles `.open`; the panel animates max-height + opacity
+   so the instrument panel below isn't pushed around abruptly. */
+.device-details {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: max-height 220ms ease, opacity 180ms ease, margin-bottom 220ms ease;
+}
+.device-details.open {
+  /* Generous cap — header is ~80 px; doesn't need to be tight. */
+  max-height: 200px;
+  opacity: 1;
+  margin-bottom: 16px;
 }
 
 .device-header {
@@ -224,6 +240,9 @@ code {
   background: var(--rule);
   opacity: 0.55;
   pointer-events: none;
+  /* Paint above canvases so the rules clip the screens rather than
+     getting clipped by them. */
+  z-index: 1;
 }
 
 /* ─── Layout helpers inside zones ────────────────────────────────── */
@@ -247,13 +266,26 @@ code {
   gap: 10px;
 }
 
-/* OSC right-side controls left-align to col 6's left edge (body-x =
-   800). With the zone at body-x=320 and a 28 px left padding, the row
-   content starts at body-x=348; an empty 440 px sub-label + 12 px row
-   gap pushes the controls to body-x=800. The sync/ring row uses an
-   empty sub-label as a spacer so it inherits the same alignment. */
-.psg-zone.osc .psg-row .sub-label {
-  min-width: 440px;
+/* Labeled group — title above its control(s), used for the three OSC
+   radio groups. The OSC stack uses a wider gap so the groups have
+   visible breathing room between them. */
+.psg-labeled-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.psg-group-label {
+  font-size: 13px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.psg-led-row {
+  display: flex;
+  gap: 16px;
+}
+.osc-stack {
+  gap: 28px;
 }
 
 /* ─── Voice screen container (label above canvas) ────────────────── */
@@ -401,7 +433,7 @@ button.led-toggle:disabled .led {
 
 .knob-label {
   bottom: 100%;
-  margin-bottom: 8px;
+  margin-bottom: 3px;
   font-size: 13px;
   color: var(--muted);
   text-transform: uppercase;
@@ -410,7 +442,7 @@ button.led-toggle:disabled .led {
 
 .knob-value {
   top: 100%;
-  margin-top: 8px;
+  margin-top: 3px;
   font-size: 12px;
   color: var(--text);
 }
