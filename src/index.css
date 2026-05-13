@@ -406,35 +406,73 @@ button.led-toggle:disabled .led {
   font-variant-numeric: tabular-nums;
 }
 
-/* ─── Slider ─────────────────────────────────────────────────────── */
+/* ─── VSlider (vertical, with gradient + ticks + cap) ────────────── */
 
-.slider {
-  min-width: 160px;
-  flex: 1;
-  max-width: 260px;
-}
-
-.slider-header {
+.vslider {
   display: flex;
-  justify-content: space-between;
-  font-size: 11px;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
 }
 
-.slider-label {
+.vslider-track {
+  position: relative;
+  background: linear-gradient(
+    to right,
+    #0d0a08 0%,
+    #1f1b18 25%,
+    #2a2622 50%,
+    #1f1b18 75%,
+    #0d0a08 100%
+  );
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: ns-resize;
+  overflow: visible;
+}
+
+/* The lit portion of the track (purple, partially transparent). */
+.vslider-fill {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  background: var(--accent);
+  border-radius: 2px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* The cap (handle) that slides up and down. */
+.vslider-cap {
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  background: var(--text);
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.vslider-label {
+  font-size: 11px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.slider-value {
+.vslider-value {
+  font-size: 11px;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 
-.slider input[type="range"] {
-  width: 100%;
-  accent-color: var(--accent);
-}
+/* Disabled state */
+.vslider.disabled .vslider-track { cursor: not-allowed; }
+.vslider.disabled .vslider-fill { background: var(--disabled-strong); opacity: 0.3; }
+.vslider.disabled .vslider-cap { background: var(--disabled-soft); box-shadow: none; }
+.vslider.disabled .vslider-label,
+.vslider.disabled .vslider-value { color: var(--disabled-soft); }
 
 /* ─── Button group (segmented) ─────────────────────────────────── */
 

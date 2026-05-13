@@ -160,9 +160,10 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                   format={(v) => v.toFixed(2)}
                 />
                 <Slider
-                  label="OSC mix"
+                  label="Mix"
                   value={params.osc_mix}
                   min={0} max={1} step={0.01}
+                  bipolar
                   disabled={osc2Off}
                   onChange={(v) => set('osc_mix', v)}
                   format={(v) => `${Math.round((1 - v) * 100)} / ${Math.round(v * 100)}`}
@@ -171,6 +172,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                   label="Detune"
                   value={params.osc2_detune}
                   min={-50} max={50} step={0.5}
+                  bipolar
                   disabled={osc2Off}
                   onChange={(v) => set('osc2_detune', v)}
                   format={fmtCents}
@@ -195,7 +197,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
 
         <div className="psg-zone drive">
           <Field title="Drive">
-            <div className="psg-stack">
+            <div className="psg-stack" style={{ alignItems: 'center' }}>
               <Knob
                 label="Amount"
                 value={params.drive}
@@ -222,8 +224,11 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
 
         <div className="psg-zone filt">
           <Field title="Filter">
-            <div className="psg-stack">
-              <div className="psg-row" style={{ gap: 24 }}>
+            <div className="psg-stack" style={{ alignItems: 'center' }}>
+              <div
+                className="psg-row"
+                style={{ justifyContent: 'space-around', width: '100%', margin: 0 }}
+              >
                 <Knob
                   label="Cutoff"
                   value={params.cutoff}
@@ -291,7 +296,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                 <Slider
                   label="Rate"
                   value={params.lfo_rate}
-                  min={0.1} max={20} step={0.05}
+                  min={0.1} max={20} log
                   disabled={!params.lfo_on}
                   onChange={(v) => set('lfo_rate', v)}
                   format={(v) => `${v.toFixed(2)} Hz`}
@@ -338,8 +343,15 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
 
         <div className="psg-zone env">
           <Field title="Envelope">
-            <div style={{ display: 'flex', gap: 24, height: '100%' }}>
-              <div className="psg-row" style={{ gap: 24, margin: 0, alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: 24, height: '100%', alignItems: 'flex-start' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-around',
+                  alignItems: 'flex-start',
+                  width: 420
+                }}
+              >
                 <Knob
                   label="Attack"
                   value={params.attack}
