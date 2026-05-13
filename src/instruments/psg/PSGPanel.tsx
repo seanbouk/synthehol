@@ -32,19 +32,19 @@ const MOD_WHEEL   = cellCentre(2, 3); // col 2 centre, vertical mid of body
  * filter/lfo) live inside an unframed .psg-zone wrapper that lays out
  * their internal flex content.
  *
+ * The OSC zone is internally split into two columns — OSC 1 (left half)
+ * and OSC 2 plus its modifiers (right half), divided by a partial
+ * vertical rule that drops half-way down the zone.
+ *
  * See `grid.ts`, `layout.ts`, and `refs/grid-sketch.svg` for the full
  * layout — this file just wires positions to controls.
  */
 
-const OSC1_WAVE_OPTIONS = [
+const WAVE_OPTIONS = [
   { value: 0, label: 'Pulse' },
   { value: 1, label: 'Ramp' },
   { value: 2, label: 'Sine' },
   { value: 3, label: 'Noise' }
-];
-const OSC2_WAVE_OPTIONS = [
-  ...OSC1_WAVE_OPTIONS,
-  { value: 4, label: 'Off' }
 ];
 const OCTAVE_OPTIONS = [
   { value: -2, label: '−2' },
@@ -110,7 +110,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
     [deviceId, setParam]
   );
 
-  const osc2Off = params.osc2_wave === 4;
+  const osc2Off = !params.osc2_on;
 
   return (
     <Stage>
@@ -135,50 +135,62 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
         {/* ── Multi-control zones (unframed, just hold flex content) ── */}
 
         <div className="psg-zone osc">
-          <div className="psg-stack osc-stack">
-            <div className="psg-labeled-group osc-group">
-              <div className="psg-group-label">OSC 1</div>
-              <ButtonGroup
-                value={params.osc1_wave}
-                options={OSC1_WAVE_OPTIONS}
-                onChange={(v) => set('osc1_wave', v)}
-              />
-            </div>
-            <div className="psg-labeled-group osc-group">
-              <div className="psg-group-label">OSC 2</div>
-              <ButtonGroup
-                value={params.osc2_wave}
-                options={OSC2_WAVE_OPTIONS}
-                onChange={(v) => set('osc2_wave', v)}
-              />
-            </div>
-            <div className="psg-labeled-group osc-group">
-              <div className="psg-group-label">OSC 2 octave</div>
-              <ButtonGroup
-                value={params.osc2_octave}
-                options={OCTAVE_OPTIONS}
-                disabled={osc2Off}
-                onChange={(v) => set('osc2_octave', v)}
-              />
-            </div>
-            <div className="psg-labeled-group osc-group">
-              {/* Empty label keeps the vertical rhythm even with the
-                  three groups above. */}
-              <div className="psg-group-label">{' '}</div>
-              <div className="psg-led-row">
-                <LEDToggle
-                  label="Sync"
-                  value={params.sync_on}
-                  disabled={osc2Off}
-                  onChange={(v) => set('sync_on', v)}
+          <div className="osc-columns">
+            {/* Left half — OSC 1. */}
+            <div className="osc-col-left">
+              <div className="psg-labeled-group">
+                <div className="psg-group-label">OSC 1</div>
+                <ButtonGroup
+                  value={params.osc1_wave}
+                  options={WAVE_OPTIONS}
+                  onChange={(v) => set('osc1_wave', v)}
                 />
+              </div>
+            </div>
+
+            {/* Right half — OSC 2 power + wave, octave, sync/ring. */}
+            <div className="osc-col-right">
+              <div className="psg-labeled-group">
                 <LEDToggle
-                  label="Ring"
-                  value={params.ring_on}
-                  warn
-                  disabled={osc2Off}
-                  onChange={(v) => set('ring_on', v)}
+                  label="OSC 2"
+                  value={params.osc2_on}
+                  onChange={(v) => set('osc2_on', v)}
                 />
+                <ButtonGroup
+                  value={params.osc2_wave}
+                  options={WAVE_OPTIONS}
+                  disabled={osc2Off}
+                  onChange={(v) => set('osc2_wave', v)}
+                />
+              </div>
+              <div className="psg-labeled-group">
+                <div className="psg-group-label">Octave</div>
+                <ButtonGroup
+                  value={params.osc2_octave}
+                  options={OCTAVE_OPTIONS}
+                  disabled={osc2Off}
+                  onChange={(v) => set('osc2_octave', v)}
+                />
+              </div>
+              <div className="psg-labeled-group">
+                {/* Empty label keeps the vertical rhythm even with the
+                    groups above. */}
+                <div className="psg-group-label">{' '}</div>
+                <div className="psg-led-row">
+                  <LEDToggle
+                    label="Sync"
+                    value={params.sync_on}
+                    disabled={osc2Off}
+                    onChange={(v) => set('sync_on', v)}
+                  />
+                  <LEDToggle
+                    label="Ring"
+                    value={params.ring_on}
+                    warn
+                    disabled={osc2Off}
+                    onChange={(v) => set('ring_on', v)}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -400,6 +412,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
         <At x={VOX_CHART_1.x} y={VOX_CHART_1.y}>
           <WaveformPreview
             osc1_wave={params.osc1_wave}
+            osc2_on={params.osc2_on}
             osc2_wave={params.osc2_wave}
             shape={params.shape}
             osc_mix={params.osc_mix}
@@ -417,6 +430,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
         <At x={VOX_CHART_2.x} y={VOX_CHART_2.y}>
           <WaveformPreview
             osc1_wave={params.osc1_wave}
+            osc2_on={params.osc2_on}
             osc2_wave={params.osc2_wave}
             shape={params.shape}
             osc_mix={params.osc_mix}

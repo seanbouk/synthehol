@@ -7,7 +7,8 @@ export interface PSGParams {
   // Voice
   shape: number;             // 0..1
   osc1_wave: number;         // 0..3 (pulse / ramp / sine / noise)
-  osc2_wave: number;         // 0..3
+  osc2_on: number;           // 0 / 1 — OSC 2 power switch
+  osc2_wave: number;         // 0..3 (pulse / ramp / sine / noise)
   osc2_octave: number;       // -2..+2 (integer)
   osc2_detune: number;       // -50..+50 cents
   osc_mix: number;           // 0..1
@@ -42,6 +43,7 @@ export interface PSGParams {
 export const PSG_DEFAULTS: PSGParams = {
   shape: 0.5,
   osc1_wave: 1,
+  osc2_on: 1,
   osc2_wave: 1,
   osc2_octave: 0,
   osc2_detune: 5,

@@ -17,17 +17,22 @@ interface AppState {
   devices: DeviceEntry[];
   activeTab: TabId;
   /** When the active tab is a device, controls whether the device
-   *  header (name / connection state / panic) slides down above the
-   *  instrument panel. Toggled by re-clicking the active device tab. */
+   *  details drop-down (name / connection state / panic) is open.
+   *  Toggled by re-clicking the active device tab. */
   deviceDetailsOpen: boolean;
+  /** Active device-tab button's left edge, in viewport pixels. The
+   *  details menu uses this to anchor its left edge under the button. */
+  activeTabLeft: number | null;
 
   setMidiReady: (ready: boolean) => void;
   setMidiError: (err: string | null) => void;
   setDevices: (devices: DeviceEntry[]) => void;
   setActiveTab: (tab: TabId) => void;
   /** Tab-bar click handler — navigates if the tab isn't active,
-   *  toggles the slide-down header if a device tab is re-clicked. */
+   *  toggles the drop-down if the active device tab is re-clicked. */
   onTabClick: (tab: TabId) => void;
+  setActiveTabLeft: (left: number | null) => void;
+  closeDeviceDetails: () => void;
 }
 
 const isDeviceTab = (t: TabId): t is { kind: 'device'; deviceId: string } =>
@@ -45,6 +50,7 @@ export const useAppStore = create<AppState>((set) => ({
   devices: [],
   activeTab: 'home',
   deviceDetailsOpen: false,
+  activeTabLeft: null,
 
   setMidiReady: (ready) => set({ midiReady: ready }),
   setMidiError: (err) => set({ midiError: err }),
@@ -75,11 +81,14 @@ export const useAppStore = create<AppState>((set) => ({
 
   onTabClick: (tab) =>
     set((s) => {
-      // Re-clicking the active device tab toggles the slide-down header.
+      // Re-clicking the active device tab toggles the drop-down.
       if (isDeviceTab(tab) && tabsEqual(s.activeTab, tab)) {
         return { deviceDetailsOpen: !s.deviceDetailsOpen };
       }
-      // Otherwise navigate, and reset the slide-down to closed.
+      // Otherwise navigate, and close the drop-down.
       return { activeTab: tab, deviceDetailsOpen: false };
-    })
+    }),
+
+  setActiveTabLeft: (left) => set({ activeTabLeft: left }),
+  closeDeviceDetails: () => set({ deviceDetailsOpen: false })
 }));

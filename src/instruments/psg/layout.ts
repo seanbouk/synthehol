@@ -101,7 +101,11 @@ export const RULES: readonly Rule[] = [
   // Horizontal — row 4 / row 5 boundary, spanning the right of perf to
   // the right of lfo. Starts inset right of the perf|osc vertical so
   // they don't meet at a corner.
-  hRule(rowBottom(4), colLeft(3), colRight(14))
+  hRule(rowBottom(4), colLeft(3), colRight(14)),
+
+  // Partial vertical, inside the OSC zone — separates OSC 1 (left) from
+  // OSC 2 (right). Drops about half-way down the OSC zone.
+  vRule(colLeft(6), rowTop(1), rowTop(1) + (rowBottom(4) - rowTop(1)) / 2)
 ] as const;
 
 // ──────────────────────────────────────────────────────────────────

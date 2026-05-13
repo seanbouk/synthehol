@@ -14,6 +14,7 @@ import { useEffect, useRef } from 'react';
 
 interface WaveformPreviewProps {
   osc1_wave: number;
+  osc2_on: number;     // 0 / 1 — OSC 2 power switch
   osc2_wave: number;
   shape: number;
   osc_mix: number;
@@ -71,6 +72,7 @@ function applyDrive(x: number, drive: number, type: number): number {
 
 export function WaveformPreview({
   osc1_wave,
+  osc2_on,
   osc2_wave,
   shape,
   osc_mix,
@@ -113,7 +115,7 @@ export function WaveformPreview({
     ctx.stroke();
 
     const osc2Ratio = Math.pow(2, osc2_octave) * Math.pow(2, osc2_detune / 1200);
-    const osc2Off = osc2_wave === 4;
+    const osc2Off = !osc2_on;
     const effectiveMix = osc2Off ? 0 : osc_mix;
     const effectiveRing = osc2Off ? 0 : ring_on;
 
@@ -140,7 +142,7 @@ export function WaveformPreview({
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
-  }, [osc1_wave, osc2_wave, shape, osc_mix, osc2_octave, osc2_detune,
+  }, [osc1_wave, osc2_on, osc2_wave, shape, osc_mix, osc2_octave, osc2_detune,
       ring_on, drive_on, drive, drive_type, phaseLead, width, height]);
 
   return (
