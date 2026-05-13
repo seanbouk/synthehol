@@ -2,7 +2,10 @@ import { useCallback, type ReactNode } from 'react';
 import { Knob } from '../../ui-kit/Knob';
 import { Slider } from '../../ui-kit/Slider';
 import { ButtonGroup } from '../../ui-kit/ButtonGroup';
+import { LEDToggle } from '../../ui-kit/LEDToggle';
+import { Wheel } from '../../ui-kit/Wheel';
 import { usePSGParams, usePSGStore } from './psg-state';
+import { usePSGPerf, usePSGPerfStore } from './psg-perf-state';
 import type { PSGParams } from './psg-defaults';
 import { WaveformPreview } from './WaveformPreview';
 import { ADSRCurve } from './ADSRCurve';
@@ -59,11 +62,6 @@ const LFO_DEST_OPTIONS = [
   { value: 2, label: 'Amp' },
   { value: 3, label: 'Shape' }
 ];
-const ON_OFF_OPTIONS = [
-  { value: 0, label: 'Off' },
-  { value: 1, label: 'On' }
-];
-
 function fmtHz(v: number): string {
   return v >= 1000 ? `${(v / 1000).toFixed(1)} kHz` : `${v.toFixed(0)} Hz`;
 }
@@ -87,6 +85,9 @@ function Field({ title, children }: { title: string; children: ReactNode }) {
 export function PSGPanel({ deviceId }: { deviceId: string }) {
   const params = usePSGParams(deviceId);
   const setParam = usePSGStore((s) => s.setParam);
+  const perf = usePSGPerf(deviceId);
+  const setBend = usePSGPerfStore((s) => s.setBend);
+  const setModWheel = usePSGPerfStore((s) => s.setModWheel);
 
   const set = useCallback(
     <K extends keyof PSGParams>(name: K, value: PSGParams[K]) => {
@@ -103,9 +104,22 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
 
         <div className="psg-zone perf">
           <Field title="Wheels">
-            <p className="muted" style={{ fontSize: 13, margin: 0 }}>
-              Pitch and Mod indicators — coming in commit 2.
-            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', height: '100%' }}>
+              <Wheel
+                label="Pitch"
+                value={perf.bend}
+                min={-2} max={2} snapBack
+                onChange={(v) => setBend(deviceId, v)}
+                format={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)} st`}
+              />
+              <Wheel
+                label="Mod"
+                value={perf.modwheel}
+                min={0} max={1}
+                onChange={(v) => setModWheel(deviceId, v)}
+                format={(v) => v.toFixed(2)}
+              />
+            </div>
           </Field>
         </div>
 
@@ -161,17 +175,16 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                   onChange={(v) => set('osc2_detune', v)}
                   format={fmtCents}
                 />
-                <ButtonGroup
+                <LEDToggle
                   label="Sync"
                   value={params.sync_on}
-                  options={ON_OFF_OPTIONS}
                   disabled={osc2Off}
                   onChange={(v) => set('sync_on', v)}
                 />
-                <ButtonGroup
+                <LEDToggle
                   label="Ring"
                   value={params.ring_on}
-                  options={ON_OFF_OPTIONS}
+                  warn
                   disabled={osc2Off}
                   onChange={(v) => set('ring_on', v)}
                 />
@@ -197,9 +210,10 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                 disabled={!params.drive_on}
                 onChange={(v) => set('drive_type', v)}
               />
-              <ButtonGroup
+              <LEDToggle
+                label="Drive"
                 value={params.drive_on}
-                options={ON_OFF_OPTIONS}
+                warn
                 onChange={(v) => set('drive_on', v)}
               />
             </div>
@@ -241,9 +255,9 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                 disabled={!params.filter_on}
                 onChange={(v) => set('filter_mode', v)}
               />
-              <ButtonGroup
+              <LEDToggle
+                label="Filter"
                 value={params.filter_on}
-                options={ON_OFF_OPTIONS}
                 onChange={(v) => set('filter_on', v)}
               />
             </div>
@@ -253,9 +267,9 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
         <div className="psg-zone lfo">
           <Field title="LFO">
             <div className="psg-stack">
-              <ButtonGroup
+              <LEDToggle
+                label="LFO"
                 value={params.lfo_on}
-                options={ON_OFF_OPTIONS}
                 onChange={(v) => set('lfo_on', v)}
               />
               <ButtonGroup

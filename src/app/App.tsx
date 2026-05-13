@@ -10,6 +10,7 @@ import { PSGEngine } from '../audio/psg-engine';
 import { engineRegistry } from '../audio/engine-registry';
 import { dispatchToEngine } from '../audio/dispatch-to-engine';
 import { usePSGStore } from '../instruments/psg/psg-state';
+import { usePSGPerfStore } from '../instruments/psg/psg-perf-state';
 import { TabContainer } from './shell/TabContainer';
 
 /**
@@ -39,6 +40,14 @@ async function setupEngineFor(
   // so UI reflects hardware changes automatically.
   engine.onSlotInput = (name, value) => {
     usePSGStore.getState().setParam(deviceId, name, value as never);
+  };
+
+  // Bridge MIDI pitch-bend / mod-wheel into the perf store so the
+  // on-screen wheels follow controller input.
+  engine.onPerfChange = (kind, value) => {
+    const perf = usePSGPerfStore.getState();
+    if (kind === 'bend') perf.setBend(deviceId, value, true);
+    else perf.setModWheel(deviceId, value, true);
   };
 
   // Seed the engine with the device's stored PSG params (defaults if

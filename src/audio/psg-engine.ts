@@ -49,6 +49,7 @@ function buildSoftClipCurve(samples = 8192, drive = 0.6): Float32Array<ArrayBuff
 }
 
 export type SlotInputHandler = (name: PSGParamName, value: number) => void;
+export type PerfChangeHandler = (kind: 'bend' | 'modwheel', value: number) => void;
 
 export class PSGEngine implements Engine {
   private node: FaustPolyAudioWorkletNode;
@@ -59,6 +60,7 @@ export class PSGEngine implements Engine {
   private pathCache = new Map<string, string>();
   private paramValues = new Map<string, number>();
   onSlotInput: SlotInputHandler | null = null;
+  onPerfChange: PerfChangeHandler | null = null;
   readonly output: AudioNode;
 
   private constructor(
@@ -129,11 +131,15 @@ export class PSGEngine implements Engine {
   }
 
   pitchBend(_channel: number, value: number): void {
-    this.setParam('bend', (value / 8192) * 2);
+    const semitones = (value / 8192) * 2;
+    this.setParam('bend', semitones);
+    this.onPerfChange?.('bend', semitones);
   }
 
   modWheel(_channel: number, value: number): void {
-    this.setParam('modwheel', value / 127);
+    const mod = value / 127;
+    this.setParam('modwheel', mod);
+    this.onPerfChange?.('modwheel', mod);
   }
 
   slot(slot: AbstractSlot, value: number): void {

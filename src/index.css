@@ -276,6 +276,112 @@ code {
   letter-spacing: 0.06em;
 }
 
+/* ─── LEDToggle ──────────────────────────────────────────────────── */
+
+button.led-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px 6px 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+button.led-toggle:hover { color: var(--text); }
+
+button.led-toggle .led {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2a2622;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+button.led-toggle.on { color: var(--text); border-color: var(--accent); }
+button.led-toggle.on .led {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.55);
+}
+
+button.led-toggle.warn.on { border-color: var(--error); }
+button.led-toggle.warn.on .led {
+  background: var(--error);
+  border-color: var(--error);
+  box-shadow: 0 0 8px rgba(248, 113, 113, 0.55);
+}
+
+button.led-toggle.disabled,
+button.led-toggle:disabled {
+  cursor: not-allowed;
+  color: var(--disabled-strong);
+  border-color: var(--border);
+}
+button.led-toggle.disabled .led,
+button.led-toggle:disabled .led {
+  background: #1f1b18;
+  box-shadow: none;
+}
+
+/* ─── Wheel (pitch / mod) ────────────────────────────────────────── */
+
+.wheel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.wheel-track {
+  position: relative;
+  background: linear-gradient(
+    to right,
+    #0d0a08 0%,
+    #1f1b18 30%,
+    #322c28 50%,
+    #1f1b18 70%,
+    #0d0a08 100%
+  );
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: ns-resize;
+  user-select: none;
+  overflow: hidden;
+}
+
+.wheel-indicator {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 8px;
+  margin-top: -4px;
+  background: var(--text);
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.wheel-label {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wheel-readout {
+  font-size: 11px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ─── Knob ───────────────────────────────────────────────────────── */
 
 .knob {
