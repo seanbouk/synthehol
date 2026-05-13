@@ -213,8 +213,11 @@ code {
 .psg-zone.drive { left: 996.25px; top: 0;     width: 157.25px; height: 507px; }
 .psg-zone.filt  { left: 1169.5px; top: 0;     width: 503.75px; height: 507px; }
 .psg-zone.lfo   { left: 1689.25px; top: 0;    width: 446.75px; height: 507px; }
-.psg-zone.vox   { left: 203px;    top: 523px; width: 777.25px; height: 234px; }
-.psg-zone.env   { left: 996.25px; top: 523px; width: 1139.75px; height: 234px; }
+/* Vox/env seam sits in the 5 px gap between voice bbox right (844.625)
+   and Attack knob left (849.625) — at the midpoint 847.125. The zones
+   touch here rather than carrying the usual 16 px gap. */
+.psg-zone.vox   { left: 203px;     top: 523px; width: 644.125px;  height: 234px; }
+.psg-zone.env   { left: 847.125px; top: 523px; width: 1288.875px; height: 234px; }
 
 /* ─── Fieldset: bordered panel with a title that breaks the border ─ */
 

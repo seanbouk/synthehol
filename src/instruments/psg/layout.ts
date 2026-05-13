@@ -148,28 +148,36 @@ export const VOX_CHART_HEIGHT = 180;
 export const VOX_CHART_GAP = 16;
 export const VOX_BBOX_WIDTH = 2 * VOX_CHART_WIDTH + VOX_CHART_GAP; // 616
 
-/** Bottom-row zones — share the osc/drive seam so the row boundary
- *  visually aligns with the top row. Uniform ZONE_GAP between them. */
-export const VOX_LEFT = OSC_LEFT;        // 203
-export const VOX_RIGHT = OSC_RIGHT;      // 980.25
-export const ENV_LEFT = DRIVE_LEFT;      // 996.25
-export const ENV_RIGHT = LFO_RIGHT;      // 2136
-
-/** Voice bbox — shifted away from X_MIRROR than centred. */
-const VOX_ZONE_CENTRE = (VOX_LEFT + VOX_RIGHT) / 2;
+/** Voice bbox — anchored to a fixed offset within the osc/vox column.
+ *  (The "would-be" centred position uses the OSC column's centre as
+ *  reference, then shifts toward the body's left edge by CHART_PUSH.) */
+const _OSC_COLUMN_CENTRE = (OSC_LEFT + OSC_RIGHT) / 2;          // 591.625
 const CHART_PUSH_FROM_MIRROR = 55;
-export const VOX_BBOX_LEFT = VOX_ZONE_CENTRE - VOX_BBOX_WIDTH / 2 - CHART_PUSH_FROM_MIRROR;  // 228.625
-export const VOX_BBOX_RIGHT = VOX_BBOX_LEFT + VOX_BBOX_WIDTH;                                 // 844.625
+export const VOX_BBOX_LEFT = _OSC_COLUMN_CENTRE - VOX_BBOX_WIDTH / 2 - CHART_PUSH_FROM_MIRROR;  // 228.625
+export const VOX_BBOX_RIGHT = VOX_BBOX_LEFT + VOX_BBOX_WIDTH;                                    // 844.625
 
-export const VOX_CHART_1_CX = VOX_BBOX_LEFT + VOX_CHART_WIDTH / 2;    // 318.625
-export const VOX_CHART_2_CX = VOX_BBOX_RIGHT - VOX_CHART_WIDTH / 2;   // 634.625
+export const VOX_CHART_1_CX = VOX_BBOX_LEFT + VOX_CHART_WIDTH / 2;    // 378.625
+export const VOX_CHART_2_CX = VOX_BBOX_RIGHT - VOX_CHART_WIDTH / 2;   // 694.625
 
 /** Env chart bbox is the mirror image of the voice bbox around X_MIRROR. */
-export const ENV_CHART_LEFT = 2 * X_MIRROR - VOX_BBOX_RIGHT;   // 1538.375
-export const ENV_CHART_RIGHT = 2 * X_MIRROR - VOX_BBOX_LEFT;   // 2154.375
+export const ENV_CHART_LEFT = 2 * X_MIRROR - VOX_BBOX_RIGHT;   // 1478.375
+export const ENV_CHART_RIGHT = 2 * X_MIRROR - VOX_BBOX_LEFT;   // 2094.375
 export const ENV_CHART_WIDTH = VOX_BBOX_WIDTH;                 // 616
 export const ENV_CHART_HEIGHT = VOX_CHART_HEIGHT;              // 180
-export const ENV_CHART_CX = (ENV_CHART_LEFT + ENV_CHART_RIGHT) / 2; // 1846.375
+export const ENV_CHART_CX = (ENV_CHART_LEFT + ENV_CHART_RIGHT) / 2; // 1786.375
 
 /** Y centre for voice and envelope charts (in body coords). */
 export const CHART_Y = 640;
+
+/** Bottom-row zones — vox hugs the voice bbox, env starts at the
+ *  Attack knob's left edge. The vox/env seam therefore sits in the
+ *  small gap between bbox right (844.625) and Attack's left edge
+ *  (COL1 − knob half-width = 849.625): a 5 px window. Zones touch at
+ *  the midpoint of that window, which means this is the one boundary
+ *  in the panel that doesn't use the standard 16 px ZONE_GAP. */
+const KNOB_HALF_W = 52; // half of the doubled knob (SIZE = 104 in Knob.tsx)
+const VOX_ENV_SEAM = (VOX_BBOX_RIGHT + (KNOB_COLS.c1 - KNOB_HALF_W)) / 2;  // 847.125
+export const VOX_LEFT = OSC_LEFT;         // 203
+export const VOX_RIGHT = VOX_ENV_SEAM;    // 847.125
+export const ENV_LEFT = VOX_ENV_SEAM;     // 847.125
+export const ENV_RIGHT = LFO_RIGHT;       // 2136
