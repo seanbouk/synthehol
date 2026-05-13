@@ -181,9 +181,9 @@ Reference mapping for the Arturia Minilab 3 (primary development device). Other 
 | Hardware       | CC   | PSG function                                  |
 |----------------|------|-----------------------------------------------|
 | Knob 1         | 86   | Shape (both oscillators)                      |
-| Knob 2         | 87   | Filter cutoff                                 |
-| Knob 3         | 89   | Filter resonance                              |
-| Knob 4         | 90   | Drive amount                                  |
+| Knob 2         | 87   | Drive amount                                  |
+| Knob 3         | 89   | Filter cutoff                                 |
+| Knob 4         | 90   | Filter resonance                              |
 | Knob 5         | 110  | Envelope attack                               |
 | Knob 6         | 111  | Envelope decay                                |
 | Knob 7         | 116  | Envelope sustain                              |

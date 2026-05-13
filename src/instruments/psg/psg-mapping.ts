@@ -37,9 +37,9 @@ export function mapSlotToPSG(
   if (slot.kind === 'knob') {
     switch (slot.index) {
       case 1: return { name: 'shape',     value: t };
-      case 2: return { name: 'cutoff',    value: logScale(t, 20, 20000) };
-      case 3: return { name: 'resonance', value: t * 0.99 };
-      case 4: return { name: 'drive',     value: t };
+      case 2: return { name: 'drive',     value: t };
+      case 3: return { name: 'cutoff',    value: logScale(t, 20, 20000) };
+      case 4: return { name: 'resonance', value: t * 0.99 };
       case 5: return { name: 'attack',    value: logScale(t, 0.001, 5) };
       case 6: return { name: 'decay',     value: logScale(t, 0.001, 5) };
       case 7: return { name: 'sustain',   value: t };
