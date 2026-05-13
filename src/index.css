@@ -204,16 +204,20 @@ code {
   position: absolute;
 }
 
-/* All positions are exact cell rectangles from layout.ts.
-   Columns: 1=0   2=160  3=320  …  14=2080  (right edge = 2240)
-   Rows:    1=0   2=160  3=320  4=480  5=640 (bottom = 800)        */
-.psg-zone.perf  { left: 0;     top: 0;   width: 320px;  height: 800px; }  /* cols 1–2,  rows 1–5 */
-.psg-zone.osc   { left: 320px; top: 0;   width: 800px;  height: 640px; }  /* cols 3–7,  rows 1–4 */
-.psg-zone.drive { left: 1120px; top: 0;  width: 160px;  height: 640px; }  /* col  8,    rows 1–4 */
-.psg-zone.filt  { left: 1280px; top: 0;  width: 480px;  height: 640px; }  /* cols 9–11, rows 1–4 */
-.psg-zone.lfo   { left: 1760px; top: 0;  width: 480px;  height: 640px; }  /* cols 12–14,rows 1–4 */
-.psg-zone.vox   { left: 320px; top: 640px; width: 640px;  height: 160px; } /* cols 3–6,  row 5  */
-.psg-zone.env   { left: 1600px; top: 640px; width: 640px; height: 160px; } /* cols 11–14,row 5  */
+/* Underlying cell rectangles:
+     Columns: 1=0   2=160  3=320  …  14=2080  (right edge = 2240)
+     Rows:    1=0   2=160  3=320  4=480  5=640 (bottom = 800)
+
+   Each box-bearing zone is inset 8 px on every edge that touches
+   another box (= ZONE_INSET in layout.ts). Edges flush with the synth
+   panel's outer border stay on their cell boundary, so the gap only
+   appears between boxes, never as a strip around the panel. */
+.psg-zone.perf   { left: 0;     top: 0;     width: 320px; height: 800px; } /* cols 1–2 / rows 1–5 (no insets — wheels box is flush) */
+.psg-zone.osc    { left: 328px; top: 0;     width: 784px; height: 632px; } /* cells 3–7 / 1–4, inset L+R+B */
+.psg-zone.drive  { left: 1128px; top: 0;    width: 144px; height: 632px; } /* cell  8   / 1–4, inset L+R+B */
+.psg-zone.filt   { left: 1288px; top: 0;    width: 464px; height: 632px; } /* cells 9–11/ 1–4, inset L+R+B */
+.psg-zone.lfo    { left: 1768px; top: 0;    width: 472px; height: 640px; } /* cells 12–14/1–4, inset L only */
+.psg-zone.envctl { left: 960px; top: 648px; width: 640px; height: 152px; } /* cells 7–10 /5,   inset T only */
 
 /* ─── Fieldset: bordered panel with a title that breaks the border ─ */
 
@@ -266,15 +270,15 @@ code {
   gap: 10px;
 }
 
-/* Zone-internal layout (perf is the only zone with non-grid children
-   that still uses flex; vox/env zones are just fieldset frames now,
-   their content lives in body-absolute positions). */
-.perf-row {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
+/* Inside the OSC fieldset every right-side control (the 3 wave/octave
+   radio groups and the sync/ring LED row) left-aligns to the left edge
+   of column 6 (body-x = 800). With OSC's left-edge 8 px inset and the
+   2 px border + 18 px field-body padding, that lands at 452 px inside
+   the field body. Sub-label min-width (440) + .psg-row gap (12) puts
+   the controls there; the sync/ring row uses an empty sub-label as a
+   spacer so it inherits the same alignment. */
+.psg-zone.osc .psg-row .sub-label {
+  min-width: 440px;
 }
 
 /* ─── Voice screen container (label above canvas) ────────────────── */

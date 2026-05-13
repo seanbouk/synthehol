@@ -10,12 +10,16 @@ import type { PSGParams } from './psg-defaults';
 import { WaveformPreview } from './WaveformPreview';
 import { ADSRCurve } from './ADSRCurve';
 import { Stage } from './Stage';
+import { cellCentre } from './grid';
 import {
   KNOBS,
   VSLIDERS, VSLIDER_CY, VSLIDER_TRACK_HEIGHT,
   VOX_CHART_1, VOX_CHART_2, VOX_CHART_WIDTH, VOX_CHART_HEIGHT,
   ENV_CHART, ENV_CHART_WIDTH, ENV_CHART_HEIGHT
 } from './layout';
+
+const PITCH_WHEEL = cellCentre(1, 3); // col 1 centre, vertical mid of body
+const MOD_WHEEL   = cellCentre(2, 3); // col 2 centre, vertical mid of body
 
 /**
  * PSG instrument panel.
@@ -121,24 +125,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
         {/* ── Zones: fieldsets with internal (non-grid) content ─────── */}
 
         <div className="psg-zone perf">
-          <Field title="Wheels">
-            <div className="perf-row">
-              <Wheel
-                label="Pitch"
-                value={perf.bend}
-                min={-2} max={2} snapBack
-                onChange={(v) => setBend(deviceId, v)}
-                format={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)} st`}
-              />
-              <Wheel
-                label="Mod"
-                value={perf.modwheel}
-                min={0} max={1}
-                onChange={(v) => setModWheel(deviceId, v)}
-                format={(v) => v.toFixed(2)}
-              />
-            </div>
-          </Field>
+          <Field title="Wheels" />
         </div>
 
         <div className="psg-zone osc">
@@ -170,6 +157,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                 />
               </div>
               <div className="psg-row">
+                <span className="sub-label" />
                 <LEDToggle
                   label="Sync"
                   value={params.sync_on}
@@ -244,13 +232,30 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
           </Field>
         </div>
 
-        <div className="psg-zone vox">
-          <Field title="Voice" />
-        </div>
-
-        <div className="psg-zone env">
+        <div className="psg-zone envctl">
           <Field title="Envelope" />
         </div>
+
+        {/* ── Wheels, centred on cols 1 and 2 ─────────────────────────── */}
+
+        <At x={PITCH_WHEEL.x} y={PITCH_WHEEL.y}>
+          <Wheel
+            label="Pitch"
+            value={perf.bend}
+            min={-2} max={2} snapBack
+            onChange={(v) => setBend(deviceId, v)}
+            format={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)} st`}
+          />
+        </At>
+        <At x={MOD_WHEEL.x} y={MOD_WHEEL.y}>
+          <Wheel
+            label="Mod"
+            value={perf.modwheel}
+            min={0} max={1}
+            onChange={(v) => setModWheel(deviceId, v)}
+            format={(v) => v.toFixed(2)}
+          />
+        </At>
 
         {/* ── Top-row knobs (row 4): shape / drive / cutoff / reso / env-amt ── */}
 

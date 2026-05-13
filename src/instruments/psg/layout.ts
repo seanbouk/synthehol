@@ -38,18 +38,27 @@ import { cellCentre, cellRect, colRight, rowTop, rowBottom } from './grid';
 // ──────────────────────────────────────────────────────────────────
 // Zones — cell rectangles (in body coords).
 // ──────────────────────────────────────────────────────────────────
+//
+// Box-bearing zones are inset by ZONE_INSET on every edge that touches
+// another box (left/right/bottom of OSC, FILTER, etc.). Edges flush
+// with the outer synth panel (top of the upper row, the outermost
+// left/right/bottom) stay at their cell boundary. The CSS rules in
+// index.css apply these insets — these RECT exports remain the raw
+// cell rectangles so consumers reading "the OSC zone covers cells
+// 3..7" continue to see the truth.
+
+/** Visual gap inset per edge between adjacent box-bearing zones. */
+export const ZONE_INSET = 8;
 
 export const PERF_RECT   = cellRect(1, 1, 2, 5);   //   0,   0, 320, 800
 export const OSC_RECT    = cellRect(3, 1, 7, 4);   // 320,   0, 800, 640
 export const DRIVE_RECT  = cellRect(8, 1, 8, 4);   // 1120,  0, 160, 640
 export const FILTER_RECT = cellRect(9, 1, 11, 4);  // 1280,  0, 480, 640
 export const LFO_RECT    = cellRect(12, 1, 14, 4); // 1760,  0, 480, 640
-export const VOX_RECT    = cellRect(3, 5, 6, 5);   // 320, 640, 640, 160
-export const ENV_RECT    = cellRect(11, 5, 14, 5); // 1600, 640, 640, 160
+export const ENVCTL_RECT = cellRect(7, 5, 10, 5);  // 960, 640, 640, 160
 
-// ADSR knob strip is a logical region between voice and envelope. It
-// has no fieldset of its own; the knobs float in the row-5 strip.
-export const ADSR_RECT   = cellRect(7, 5, 10, 5);  // 960, 640, 640, 160
+// Voice charts and the envelope display are unboxed canvases; they
+// simply fill their cells in row 5. They have no zone wrapper.
 
 // ──────────────────────────────────────────────────────────────────
 // Knob positions — cell centres.
