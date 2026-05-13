@@ -213,11 +213,12 @@ code {
 .psg-zone.drive { left: 996.25px; top: 0;     width: 157.25px; height: 507px; }
 .psg-zone.filt  { left: 1169.5px; top: 0;     width: 503.75px; height: 507px; }
 .psg-zone.lfo   { left: 1689.25px; top: 0;    width: 446.75px; height: 507px; }
-/* Vox/env seam sits in the 5 px gap between voice bbox right (844.625)
-   and Attack knob left (849.625) — at the midpoint 847.125. The zones
-   touch here rather than carrying the usual 16 px gap. */
-.psg-zone.vox   { left: 203px;     top: 523px; width: 644.125px;  height: 234px; }
-.psg-zone.env   { left: 847.125px; top: 523px; width: 1288.875px; height: 234px; }
+/* Env zone's left edge sits the same distance from Attack as drive
+   zone's left edge sits from the Drive knob (78.625 px). Vox's right
+   edge follows with the standard 16 px ZONE_GAP, giving vox a width
+   of 604 to hold the two voice screens with equal padding. */
+.psg-zone.vox   { left: 203px; top: 523px; width: 604px;  height: 234px; }
+.psg-zone.env   { left: 823px; top: 523px; width: 1313px; height: 234px; }
 
 /* ─── Fieldset: bordered panel with a title that breaks the border ─ */
 
