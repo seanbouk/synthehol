@@ -27,10 +27,12 @@ interface WaveformPreviewProps {
   phaseLead?: number;
   /** Optional caption rendered above the canvas. */
   label?: string;
+  width?: number;
+  height?: number;
 }
 
-const WIDTH = 300;
-const HEIGHT = 180;
+const DEFAULT_WIDTH = 300;
+const DEFAULT_HEIGHT = 180;
 
 function oscSample(phase: number, wave: number, shape: number): number {
   switch (wave) {
@@ -79,7 +81,9 @@ export function WaveformPreview({
   drive,
   drive_type,
   phaseLead = 0,
-  label
+  label,
+  width = DEFAULT_WIDTH,
+  height = DEFAULT_HEIGHT
 }: WaveformPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -93,19 +97,19 @@ export function WaveformPreview({
     // scales it up. 3× covers DPR=1 monitors at scale up to ~3, and
     // DPR=2 monitors at scale up to ~1.5.
     const dpr = Math.max(1, Math.min(3, (window.devicePixelRatio || 1) * 1.5));
-    canvas.width = WIDTH * dpr;
-    canvas.height = HEIGHT * dpr;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.fillStyle = '#100d0b';
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    ctx.fillRect(0, 0, width, height);
 
     // Zero line
     ctx.strokeStyle = '#322c28';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(0, HEIGHT / 2);
-    ctx.lineTo(WIDTH, HEIGHT / 2);
+    ctx.moveTo(0, height / 2);
+    ctx.lineTo(width, height / 2);
     ctx.stroke();
 
     const osc2Ratio = Math.pow(2, osc2_octave) * Math.pow(2, osc2_detune / 1200);
@@ -116,9 +120,9 @@ export function WaveformPreview({
     ctx.strokeStyle = '#a78bfa';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    for (let x = 0; x < WIDTH; x++) {
+    for (let x = 0; x < width; x++) {
       // One full OSC 1 cycle across the canvas, offset by phaseLead cycles.
-      const t = phaseLead + x / WIDTH;
+      const t = phaseLead + x / width;
       const phase1 = t - Math.floor(t);
       const phase2Raw = t * osc2Ratio;
       const phase2 = phase2Raw - Math.floor(phase2Raw);
@@ -131,20 +135,20 @@ export function WaveformPreview({
         : o1 * (1 - effectiveMix) + o2 * effectiveMix;
       const sample = drive_on ? applyDrive(mixed, drive, drive_type) : mixed;
 
-      const y = HEIGHT / 2 - sample * (HEIGHT / 2 - 6);
+      const y = height / 2 - sample * (height / 2 - 6);
       if (x === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
     ctx.stroke();
   }, [osc1_wave, osc2_wave, shape, osc_mix, osc2_octave, osc2_detune,
-      ring_on, drive_on, drive, drive_type, phaseLead]);
+      ring_on, drive_on, drive, drive_type, phaseLead, width, height]);
 
   return (
     <div className="psg-voice-screen">
       {label && <div className="psg-voice-label">{label}</div>}
       <canvas
         ref={canvasRef}
-        style={{ width: WIDTH, height: HEIGHT, display: 'block', borderRadius: 4 }}
+        style={{ width, height, display: 'block', borderRadius: 4 }}
       />
     </div>
   );

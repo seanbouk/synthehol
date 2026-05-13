@@ -11,24 +11,22 @@ import { WaveformPreview } from './WaveformPreview';
 import { ADSRCurve } from './ADSRCurve';
 import { Stage } from './Stage';
 import {
-  KNOB_COLS, KNOB_ROWS, ENV_AMT_X, VSLIDERS, VSLIDER_Y,
-  VOX_CHART_1_CX, VOX_CHART_2_CX, ENV_CHART_CX, CHART_Y,
-  ENV_CHART_WIDTH, ENV_CHART_HEIGHT
+  KNOBS,
+  VSLIDERS, VSLIDER_CY, VSLIDER_TRACK_HEIGHT,
+  VOX_CHART_1, VOX_CHART_2, VOX_CHART_WIDTH, VOX_CHART_HEIGHT,
+  ENV_CHART, ENV_CHART_WIDTH, ENV_CHART_HEIGHT
 } from './layout';
 
 /**
  * PSG instrument panel.
  *
- * The fixed 2200×800 Stage hosts the body, which lays out fieldset
- * zones (perf, osc, drive, filter, lfo, vox, env). Zone-internal
- * controls (wave selectors, LEDs, pills, screens, ADSR curve) sit
- * inside their fields with the field-body's natural flex layout.
+ * The fixed 2240×800 Stage is a 14×5 grid of 160 px square cells. Each
+ * fieldset zone (perf / osc / drive / filter / lfo / vox / env) sits in
+ * an exact cell rectangle, and free-floating controls (knobs, vsliders,
+ * charts) anchor to cell centres or column boundaries.
  *
- * The 4×2 knob grid and the 4 vsliders are positioned ABSOLUTELY in
- * body coordinates (using the constants in ./layout.ts), free-floating
- * over the fields. That guarantees the grid IS a grid — every knob and
- * slider references the same axes, so a tweak to one mirror moves
- * everything in lockstep.
+ * See `grid.ts`, `layout.ts`, and `refs/grid-sketch.svg` for the full
+ * layout — this file just wires the positions to the controls.
  */
 
 const OSC1_WAVE_OPTIONS = [
@@ -254,9 +252,9 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
           <Field title="Envelope" />
         </div>
 
-        {/* ── 4×2 knob grid, body-absolute, referencing layout.ts ───── */}
+        {/* ── Top-row knobs (row 4): shape / drive / cutoff / reso / env-amt ── */}
 
-        <At x={KNOB_COLS.c1} y={KNOB_ROWS.r1}>
+        <At x={KNOBS.shape.x} y={KNOBS.shape.y}>
           <Knob
             label="Shape"
             value={params.shape}
@@ -265,7 +263,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={(v) => v.toFixed(2)}
           />
         </At>
-        <At x={KNOB_COLS.c2} y={KNOB_ROWS.r1}>
+        <At x={KNOBS.drive.x} y={KNOBS.drive.y}>
           <Knob
             label="Drive"
             value={params.drive}
@@ -275,7 +273,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={(v) => v.toFixed(2)}
           />
         </At>
-        <At x={KNOB_COLS.c3} y={KNOB_ROWS.r1}>
+        <At x={KNOBS.cutoff.x} y={KNOBS.cutoff.y}>
           <Knob
             label="Cutoff"
             value={params.cutoff}
@@ -285,7 +283,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={fmtHz}
           />
         </At>
-        <At x={KNOB_COLS.c4} y={KNOB_ROWS.r1}>
+        <At x={KNOBS.reso.x} y={KNOBS.reso.y}>
           <Knob
             label="Reso"
             value={params.resonance}
@@ -295,9 +293,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={(v) => v.toFixed(2)}
           />
         </At>
-
-        {/* 9th knob — Filter Env Amount sits one column step right of Reso. */}
-        <At x={ENV_AMT_X} y={KNOB_ROWS.r1}>
+        <At x={KNOBS.envAmt.x} y={KNOBS.envAmt.y}>
           <Knob
             label="Env amt"
             value={params.filter_env_amount}
@@ -308,7 +304,9 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
           />
         </At>
 
-        <At x={KNOB_COLS.c1} y={KNOB_ROWS.r2}>
+        {/* ── ADSR knobs (row 5): attack / decay / sustain / release ── */}
+
+        <At x={KNOBS.attack.x} y={KNOBS.attack.y}>
           <Knob
             label="Attack"
             value={params.attack}
@@ -317,7 +315,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={fmtMs}
           />
         </At>
-        <At x={KNOB_COLS.c2} y={KNOB_ROWS.r2}>
+        <At x={KNOBS.decay.x} y={KNOBS.decay.y}>
           <Knob
             label="Decay"
             value={params.decay}
@@ -326,7 +324,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={fmtMs}
           />
         </At>
-        <At x={KNOB_COLS.c3} y={KNOB_ROWS.r2}>
+        <At x={KNOBS.sustain.x} y={KNOBS.sustain.y}>
           <Knob
             label="Sustain"
             value={params.sustain}
@@ -335,7 +333,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             format={(v) => v.toFixed(2)}
           />
         </At>
-        <At x={KNOB_COLS.c4} y={KNOB_ROWS.r2}>
+        <At x={KNOBS.release.x} y={KNOBS.release.y}>
           <Knob
             label="Release"
             value={params.release}
@@ -345,54 +343,58 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
           />
         </At>
 
-        {/* ── 4 vsliders, body-absolute, mirrored around X_MIRROR ───── */}
+        {/* ── Vsliders on column boundaries, 2 cells tall (rows 2–3) ── */}
 
-        <At x={VSLIDERS.mix} y={VSLIDER_Y}>
+        <At x={VSLIDERS.mix} y={VSLIDER_CY}>
           <Slider
             label="Mix"
             value={params.osc_mix}
             min={0} max={1} step={0.01}
             bipolar
+            trackHeight={VSLIDER_TRACK_HEIGHT}
             disabled={osc2Off}
             onChange={(v) => set('osc_mix', v)}
             format={(v) => `${Math.round((1 - v) * 100)} / ${Math.round(v * 100)}`}
           />
         </At>
-        <At x={VSLIDERS.detune} y={VSLIDER_Y}>
+        <At x={VSLIDERS.detune} y={VSLIDER_CY}>
           <Slider
             label="Detune"
             value={params.osc2_detune}
             min={-50} max={50} step={0.5}
             bipolar
+            trackHeight={VSLIDER_TRACK_HEIGHT}
             disabled={osc2Off}
             onChange={(v) => set('osc2_detune', v)}
             format={fmtCents}
           />
         </At>
-        <At x={VSLIDERS.depth} y={VSLIDER_Y}>
+        <At x={VSLIDERS.depth} y={VSLIDER_CY}>
           <Slider
             label="Depth"
             value={params.lfo_depth}
             min={0} max={1} step={0.01}
+            trackHeight={VSLIDER_TRACK_HEIGHT}
             disabled={!params.lfo_on}
             onChange={(v) => set('lfo_depth', v)}
             format={(v) => v.toFixed(2)}
           />
         </At>
-        <At x={VSLIDERS.rate} y={VSLIDER_Y}>
+        <At x={VSLIDERS.rate} y={VSLIDER_CY}>
           <Slider
             label="Rate"
             value={params.lfo_rate}
             min={0.1} max={20} log
+            trackHeight={VSLIDER_TRACK_HEIGHT}
             disabled={!params.lfo_on}
             onChange={(v) => set('lfo_rate', v)}
             format={(v) => `${v.toFixed(2)} Hz`}
           />
         </At>
 
-        {/* ── Voice charts (left) + Envelope chart (right of mirror) ── */}
+        {/* ── Voice charts (cells 3–4 / 5–6, row 5) + Envelope chart (cells 11–14, row 5) ── */}
 
-        <At x={VOX_CHART_1_CX} y={CHART_Y}>
+        <At x={VOX_CHART_1.x} y={VOX_CHART_1.y}>
           <WaveformPreview
             osc1_wave={params.osc1_wave}
             osc2_wave={params.osc2_wave}
@@ -406,9 +408,11 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             drive_type={params.drive_type}
             phaseLead={0}
             label="Now"
+            width={VOX_CHART_WIDTH}
+            height={VOX_CHART_HEIGHT}
           />
         </At>
-        <At x={VOX_CHART_2_CX} y={CHART_Y}>
+        <At x={VOX_CHART_2.x} y={VOX_CHART_2.y}>
           <WaveformPreview
             osc1_wave={params.osc1_wave}
             osc2_wave={params.osc2_wave}
@@ -422,9 +426,11 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
             drive_type={params.drive_type}
             phaseLead={8}
             label="+Δt"
+            width={VOX_CHART_WIDTH}
+            height={VOX_CHART_HEIGHT}
           />
         </At>
-        <At x={ENV_CHART_CX} y={CHART_Y}>
+        <At x={ENV_CHART.x} y={ENV_CHART.y}>
           <ADSRCurve
             attack={params.attack}
             decay={params.decay}

@@ -181,44 +181,39 @@ code {
 }
 
 .psg-stage-inner {
-  width: 2200px;
+  width: 2240px;
   height: 800px;
   flex-shrink: 0;
   transform-origin: center;
   position: relative;
 }
 
-/* Body area inside the stage — matches the design's 32 / 21 padding. */
+/* Body fills the entire stage. The 14×5 × 160 px grid IS the layout —
+   no extra padding to break it. */
 .psg-body {
   position: absolute;
-  top: 21px;
-  left: 32px;
-  width: 2136px;
-  height: 757px;
+  top: 0;
+  left: 0;
+  width: 2240px;
+  height: 800px;
 }
 
-/* Each zone is absolutely placed inside .psg-body. */
+/* Each zone is absolutely placed inside .psg-body, aligned to grid
+   cells (see src/instruments/psg/layout.ts and refs/grid-sketch.svg). */
 .psg-zone {
   position: absolute;
 }
 
-/* Zone X-positions are kept in sync with layout.ts — every adjacent
-   pair of fieldset boxes is separated by ZONE_GAP = 16px. Drive box is
-   centred on COL2, with its borders sitting half a gap inside each
-   knob-pair midpoint (drive/osc seam = mid(Shape,Drive); drive/filter
-   seam = mid(Drive,Cutoff)). Vox/env share the same X seam as
-   osc/drive so the row boundary aligns visually. */
-.psg-zone.perf  { left: 0;         top: 0;     width: 187px;    height: 757px; }
-.psg-zone.osc   { left: 203px;     top: 0;     width: 785.25px; height: 507px; }
-.psg-zone.drive { left: 1004.25px; top: 0;     width: 157.25px; height: 507px; }
-.psg-zone.filt  { left: 1177.5px;  top: 0;     width: 503.75px; height: 507px; }
-.psg-zone.lfo   { left: 1697.25px; top: 0;     width: 438.75px; height: 507px; }
-/* Env zone's left edge sits the same distance from Attack as drive
-   zone's left edge sits from the Drive knob (78.625 px). Vox's right
-   edge follows with the standard 16 px ZONE_GAP, giving vox a width
-   of 604 to hold the two voice screens with equal padding. */
-.psg-zone.vox   { left: 203px; top: 523px; width: 612px;  height: 234px; }
-.psg-zone.env   { left: 831px; top: 523px; width: 1305px; height: 234px; }
+/* All positions are exact cell rectangles from layout.ts.
+   Columns: 1=0   2=160  3=320  …  14=2080  (right edge = 2240)
+   Rows:    1=0   2=160  3=320  4=480  5=640 (bottom = 800)        */
+.psg-zone.perf  { left: 0;     top: 0;   width: 320px;  height: 800px; }  /* cols 1–2,  rows 1–5 */
+.psg-zone.osc   { left: 320px; top: 0;   width: 800px;  height: 640px; }  /* cols 3–7,  rows 1–4 */
+.psg-zone.drive { left: 1120px; top: 0;  width: 160px;  height: 640px; }  /* col  8,    rows 1–4 */
+.psg-zone.filt  { left: 1280px; top: 0;  width: 480px;  height: 640px; }  /* cols 9–11, rows 1–4 */
+.psg-zone.lfo   { left: 1760px; top: 0;  width: 480px;  height: 640px; }  /* cols 12–14,rows 1–4 */
+.psg-zone.vox   { left: 320px; top: 640px; width: 640px;  height: 160px; } /* cols 3–6,  row 5  */
+.psg-zone.env   { left: 1600px; top: 640px; width: 640px; height: 160px; } /* cols 11–14,row 5  */
 
 /* ─── Fieldset: bordered panel with a title that breaks the border ─ */
 
