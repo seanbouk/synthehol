@@ -10,23 +10,21 @@ import type { PSGParams } from './psg-defaults';
 import { WaveformPreview } from './WaveformPreview';
 import { ADSRCurve } from './ADSRCurve';
 import { Stage } from './Stage';
+import { KNOB_COLS, KNOB_ROWS, VSLIDERS, VSLIDER_Y } from './layout';
 
 /**
  * PSG instrument panel.
  *
- * Lives inside a fixed 2200×800 Stage that scales uniformly to fit
- * whatever space it's given. All children are absolutely positioned
- * within named zones — no reflow, no responsive layout below the
- * stage boundary.
+ * The fixed 2200×800 Stage hosts the body, which lays out fieldset
+ * zones (perf, osc, drive, filter, lfo, vox, env). Zone-internal
+ * controls (wave selectors, LEDs, pills, screens, ADSR curve) sit
+ * inside their fields with the field-body's natural flex layout.
  *
- * Zones (in stage coordinates):
- *   perf    — pitch/mod wheels                (left column)
- *   osc     — OSC 1/2 + shape + mix + detune  (top middle, wide)
- *   drive   — drive amount + type             (top, right of osc)
- *   filt    — cutoff/reso + env amt + mode    (top middle-right)
- *   lfo     — depth/rate + destination        (top right column)
- *   vox     — two voice waveform screens      (bottom-left)
- *   env     — ADSR knobs + curve              (bottom-right)
+ * The 4×2 knob grid and the 4 vsliders are positioned ABSOLUTELY in
+ * body coordinates (using the constants in ./layout.ts), free-floating
+ * over the fields. That guarantees the grid IS a grid — every knob and
+ * slider references the same axes, so a tweak to one mirror moves
+ * everything in lockstep.
  */
 
 const OSC1_WAVE_OPTIONS = [
@@ -62,6 +60,7 @@ const LFO_DEST_OPTIONS = [
   { value: 2, label: 'Amp' },
   { value: 3, label: 'Shape' }
 ];
+
 function fmtHz(v: number): string {
   return v >= 1000 ? `${(v / 1000).toFixed(1)} kHz` : `${v.toFixed(0)} Hz`;
 }
@@ -72,12 +71,27 @@ function fmtCents(v: number): string {
   return `${v >= 0 ? '+' : ''}${v.toFixed(0)} ¢`;
 }
 
-/** Field — bordered card with a title that breaks the border. */
-function Field({ title, children }: { title: string; children: ReactNode }) {
+function Field({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <div className="psg-field">
       <div className="psg-field-title">{title}</div>
       <div className="psg-field-body">{children}</div>
+    </div>
+  );
+}
+
+/** Absolute-position helper. (x, y) anchors to the child's centre. */
+function At({ x, y, children }: { x: number; y: number; children: ReactNode }) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        transform: 'translate(-50%, -50%)'
+      }}
+    >
+      {children}
     </div>
   );
 }
@@ -102,9 +116,11 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
     <Stage>
       <div className="psg-body">
 
+        {/* ── Zones: fieldsets with internal (non-grid) content ─────── */}
+
         <div className="psg-zone perf">
           <Field title="Wheels">
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', height: '100%' }}>
+            <div className="perf-row">
               <Wheel
                 label="Pitch"
                 value={perf.bend}
@@ -151,32 +167,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                   onChange={(v) => set('osc2_octave', v)}
                 />
               </div>
-              <div className="psg-row" style={{ gap: 24 }}>
-                <Knob
-                  label="Shape"
-                  value={params.shape}
-                  min={0} max={1}
-                  onChange={(v) => set('shape', v)}
-                  format={(v) => v.toFixed(2)}
-                />
-                <Slider
-                  label="Mix"
-                  value={params.osc_mix}
-                  min={0} max={1} step={0.01}
-                  bipolar
-                  disabled={osc2Off}
-                  onChange={(v) => set('osc_mix', v)}
-                  format={(v) => `${Math.round((1 - v) * 100)} / ${Math.round(v * 100)}`}
-                />
-                <Slider
-                  label="Detune"
-                  value={params.osc2_detune}
-                  min={-50} max={50} step={0.5}
-                  bipolar
-                  disabled={osc2Off}
-                  onChange={(v) => set('osc2_detune', v)}
-                  format={fmtCents}
-                />
+              <div className="psg-row">
                 <LEDToggle
                   label="Sync"
                   value={params.sync_on}
@@ -198,14 +189,6 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
         <div className="psg-zone drive">
           <Field title="Drive">
             <div className="psg-stack" style={{ alignItems: 'center' }}>
-              <Knob
-                label="Amount"
-                value={params.drive}
-                min={0} max={1}
-                disabled={!params.drive_on}
-                onChange={(v) => set('drive', v)}
-                format={(v) => v.toFixed(2)}
-              />
               <ButtonGroup
                 value={params.drive_type}
                 options={DRIVE_OPTIONS}
@@ -225,27 +208,6 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
         <div className="psg-zone filt">
           <Field title="Filter">
             <div className="psg-stack" style={{ alignItems: 'center' }}>
-              <div
-                className="psg-row"
-                style={{ justifyContent: 'space-around', width: '100%', margin: 0 }}
-              >
-                <Knob
-                  label="Cutoff"
-                  value={params.cutoff}
-                  min={20} max={20000} log
-                  disabled={!params.filter_on}
-                  onChange={(v) => set('cutoff', v)}
-                  format={fmtHz}
-                />
-                <Knob
-                  label="Reso"
-                  value={params.resonance}
-                  min={0} max={0.99}
-                  disabled={!params.filter_on}
-                  onChange={(v) => set('resonance', v)}
-                  format={(v) => v.toFixed(2)}
-                />
-              </div>
               <Knob
                 label="Env amt"
                 value={params.filter_env_amount}
@@ -271,7 +233,7 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
 
         <div className="psg-zone lfo">
           <Field title="LFO">
-            <div className="psg-stack">
+            <div className="psg-stack" style={{ alignItems: 'center' }}>
               <LEDToggle
                 label="LFO"
                 value={params.lfo_on}
@@ -284,31 +246,13 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
                 disabled={!params.lfo_on}
                 onChange={(v) => set('lfo_dest', v)}
               />
-              <div className="psg-row" style={{ gap: 24 }}>
-                <Slider
-                  label="Depth"
-                  value={params.lfo_depth}
-                  min={0} max={1} step={0.01}
-                  disabled={!params.lfo_on}
-                  onChange={(v) => set('lfo_depth', v)}
-                  format={(v) => v.toFixed(2)}
-                />
-                <Slider
-                  label="Rate"
-                  value={params.lfo_rate}
-                  min={0.1} max={20} log
-                  disabled={!params.lfo_on}
-                  onChange={(v) => set('lfo_rate', v)}
-                  format={(v) => `${v.toFixed(2)} Hz`}
-                />
-              </div>
             </div>
           </Field>
         </div>
 
         <div className="psg-zone vox">
           <Field title="Voice">
-            <div style={{ display: 'flex', gap: 16, height: '100%' }}>
+            <div className="vox-row">
               <WaveformPreview
                 osc1_wave={params.osc1_wave}
                 osc2_wave={params.osc2_wave}
@@ -343,55 +287,140 @@ export function PSGPanel({ deviceId }: { deviceId: string }) {
 
         <div className="psg-zone env">
           <Field title="Envelope">
-            <div style={{ display: 'flex', gap: 24, height: '100%', alignItems: 'flex-start' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-around',
-                  alignItems: 'flex-start',
-                  width: 420
-                }}
-              >
-                <Knob
-                  label="Attack"
-                  value={params.attack}
-                  min={0.001} max={5} log
-                  onChange={(v) => set('attack', v)}
-                  format={fmtMs}
-                />
-                <Knob
-                  label="Decay"
-                  value={params.decay}
-                  min={0.001} max={5} log
-                  onChange={(v) => set('decay', v)}
-                  format={fmtMs}
-                />
-                <Knob
-                  label="Sustain"
-                  value={params.sustain}
-                  min={0} max={1}
-                  onChange={(v) => set('sustain', v)}
-                  format={(v) => v.toFixed(2)}
-                />
-                <Knob
-                  label="Release"
-                  value={params.release}
-                  min={0.001} max={5} log
-                  onChange={(v) => set('release', v)}
-                  format={fmtMs}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <ADSRCurve
-                  attack={params.attack}
-                  decay={params.decay}
-                  sustain={params.sustain}
-                  release={params.release}
-                />
-              </div>
+            <div className="env-curve-wrap">
+              <ADSRCurve
+                attack={params.attack}
+                decay={params.decay}
+                sustain={params.sustain}
+                release={params.release}
+              />
             </div>
           </Field>
         </div>
+
+        {/* ── 4×2 knob grid, body-absolute, referencing layout.ts ───── */}
+
+        <At x={KNOB_COLS.c1} y={KNOB_ROWS.r1}>
+          <Knob
+            label="Shape"
+            value={params.shape}
+            min={0} max={1}
+            onChange={(v) => set('shape', v)}
+            format={(v) => v.toFixed(2)}
+          />
+        </At>
+        <At x={KNOB_COLS.c2} y={KNOB_ROWS.r1}>
+          <Knob
+            label="Drive"
+            value={params.drive}
+            min={0} max={1}
+            disabled={!params.drive_on}
+            onChange={(v) => set('drive', v)}
+            format={(v) => v.toFixed(2)}
+          />
+        </At>
+        <At x={KNOB_COLS.c3} y={KNOB_ROWS.r1}>
+          <Knob
+            label="Cutoff"
+            value={params.cutoff}
+            min={20} max={20000} log
+            disabled={!params.filter_on}
+            onChange={(v) => set('cutoff', v)}
+            format={fmtHz}
+          />
+        </At>
+        <At x={KNOB_COLS.c4} y={KNOB_ROWS.r1}>
+          <Knob
+            label="Reso"
+            value={params.resonance}
+            min={0} max={0.99}
+            disabled={!params.filter_on}
+            onChange={(v) => set('resonance', v)}
+            format={(v) => v.toFixed(2)}
+          />
+        </At>
+
+        <At x={KNOB_COLS.c1} y={KNOB_ROWS.r2}>
+          <Knob
+            label="Attack"
+            value={params.attack}
+            min={0.001} max={5} log
+            onChange={(v) => set('attack', v)}
+            format={fmtMs}
+          />
+        </At>
+        <At x={KNOB_COLS.c2} y={KNOB_ROWS.r2}>
+          <Knob
+            label="Decay"
+            value={params.decay}
+            min={0.001} max={5} log
+            onChange={(v) => set('decay', v)}
+            format={fmtMs}
+          />
+        </At>
+        <At x={KNOB_COLS.c3} y={KNOB_ROWS.r2}>
+          <Knob
+            label="Sustain"
+            value={params.sustain}
+            min={0} max={1}
+            onChange={(v) => set('sustain', v)}
+            format={(v) => v.toFixed(2)}
+          />
+        </At>
+        <At x={KNOB_COLS.c4} y={KNOB_ROWS.r2}>
+          <Knob
+            label="Release"
+            value={params.release}
+            min={0.001} max={5} log
+            onChange={(v) => set('release', v)}
+            format={fmtMs}
+          />
+        </At>
+
+        {/* ── 4 vsliders, body-absolute, mirrored around X_MIRROR ───── */}
+
+        <At x={VSLIDERS.mix} y={VSLIDER_Y}>
+          <Slider
+            label="Mix"
+            value={params.osc_mix}
+            min={0} max={1} step={0.01}
+            bipolar
+            disabled={osc2Off}
+            onChange={(v) => set('osc_mix', v)}
+            format={(v) => `${Math.round((1 - v) * 100)} / ${Math.round(v * 100)}`}
+          />
+        </At>
+        <At x={VSLIDERS.detune} y={VSLIDER_Y}>
+          <Slider
+            label="Detune"
+            value={params.osc2_detune}
+            min={-50} max={50} step={0.5}
+            bipolar
+            disabled={osc2Off}
+            onChange={(v) => set('osc2_detune', v)}
+            format={fmtCents}
+          />
+        </At>
+        <At x={VSLIDERS.depth} y={VSLIDER_Y}>
+          <Slider
+            label="Depth"
+            value={params.lfo_depth}
+            min={0} max={1} step={0.01}
+            disabled={!params.lfo_on}
+            onChange={(v) => set('lfo_depth', v)}
+            format={(v) => v.toFixed(2)}
+          />
+        </At>
+        <At x={VSLIDERS.rate} y={VSLIDER_Y}>
+          <Slider
+            label="Rate"
+            value={params.lfo_rate}
+            min={0.1} max={20} log
+            disabled={!params.lfo_on}
+            onChange={(v) => set('lfo_rate', v)}
+            format={(v) => `${v.toFixed(2)} Hz`}
+          />
+        </At>
 
       </div>
     </Stage>

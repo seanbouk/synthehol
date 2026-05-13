@@ -261,6 +261,35 @@ code {
   gap: 10px;
 }
 
+/* Zone-internal layouts that aren't grid-driven. */
+.perf-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100%;
+  padding-top: 8px;
+}
+
+.vox-row {
+  display: flex;
+  gap: 16px;
+  justify-content: space-around;
+  align-items: center;
+  height: 100%;
+}
+
+.env-curve-wrap {
+  position: absolute;
+  /* Sits to the right of the col-4 knob — leave room for the knob's
+     halo (knob right edge ≈ body x 1640, env zone left edge body x 871,
+     so within-zone left = 1640 - 871 + 12 gap = 781). */
+  left: 781px;
+  right: 12px;
+  top: 24px;
+  bottom: 18px;
+}
+
 /* ─── Voice screen container (label above canvas) ────────────────── */
 
 .psg-voice-screen {
