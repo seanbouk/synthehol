@@ -12,8 +12,8 @@ interface WheelProps {
   onChange: (v: number) => void;
 }
 
-const WHEEL_W = 40;
-const WHEEL_H = 220;
+const WHEEL_W = 44;
+const WHEEL_H = 600;
 const SENSITIVITY = WHEEL_H; // pixels of drag = full range
 
 export function Wheel({

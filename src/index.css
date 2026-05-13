@@ -211,8 +211,8 @@ code {
 .psg-zone.perf  { left: 0;        top: 0;     width: 187px;    height: 757px; }
 .psg-zone.osc   { left: 203px;    top: 0;     width: 777.25px; height: 507px; }
 .psg-zone.drive { left: 996.25px; top: 0;     width: 157.25px; height: 507px; }
-.psg-zone.filt  { left: 1169.5px; top: 0;     width: 478.5px;  height: 507px; }
-.psg-zone.lfo   { left: 1664px;   top: 0;     width: 472px;    height: 507px; }
+.psg-zone.filt  { left: 1169.5px; top: 0;     width: 503.75px; height: 507px; }
+.psg-zone.lfo   { left: 1689.25px; top: 0;    width: 446.75px; height: 507px; }
 .psg-zone.vox   { left: 203px;    top: 523px; width: 777.25px; height: 234px; }
 .psg-zone.env   { left: 996.25px; top: 523px; width: 1139.75px; height: 234px; }
 
@@ -274,9 +274,8 @@ code {
   display: flex;
   gap: 12px;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
   height: 100%;
-  padding-top: 8px;
 }
 
 /* ─── Voice screen container (label above canvas) ────────────────── */

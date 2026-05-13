@@ -93,11 +93,11 @@ export const DRIVE_LEFT = GAP_OSC_DRIVE + HALF_GAP;            // 996.25
 export const DRIVE_RIGHT = GAP_DRIVE_FILT - HALF_GAP;          // 1153.5
 export const DRIVE_WIDTH = DRIVE_RIGHT - DRIVE_LEFT;           // 157.25
 
-/** Filter — left mirrors drive's right via the same gap; right edge
- *  fixed (the filter/lfo gap is already ZONE_GAP). */
+/** Filter — left follows the drive/filter seam; right is set so the
+ *  Reso knob (COL4) sits exactly in the centre of the filter box. */
 export const FILTER_LEFT = GAP_DRIVE_FILT + HALF_GAP;          // 1169.5
-export const FILTER_RIGHT = 1648;
-export const FILTER_WIDTH = FILTER_RIGHT - FILTER_LEFT;        // 478.5
+export const FILTER_RIGHT = 2 * KNOB_COLS.c4 - FILTER_LEFT;    // 1673.25
+export const FILTER_WIDTH = FILTER_RIGHT - FILTER_LEFT;        // 503.75
 
 /** Oscillators — right edge sits HALF_GAP before the osc/drive gap
  *  centre. Left edge unchanged. */
@@ -105,11 +105,11 @@ export const OSC_LEFT = 203;
 export const OSC_RIGHT = GAP_OSC_DRIVE - HALF_GAP;             // 980.25
 export const OSC_WIDTH = OSC_RIGHT - OSC_LEFT;                 // 777.25
 
-/** LFO — unchanged. */
-export const LFO_LEFT = 1664;
+/** LFO — left follows from filter's right (one ZONE_GAP across). */
+export const LFO_LEFT = FILTER_RIGHT + ZONE_GAP;               // 1689.25
 export const LFO_RIGHT = 2136;
-export const LFO_WIDTH = LFO_RIGHT - LFO_LEFT;                 // 472
-export const LFO_CX = (LFO_LEFT + LFO_RIGHT) / 2;              // 1900
+export const LFO_WIDTH = LFO_RIGHT - LFO_LEFT;                 // 446.75
+export const LFO_CX = (LFO_LEFT + LFO_RIGHT) / 2;              // 1912.625
 
 // ──────────────────────────────────────────────────────────────────
 // Vsliders — 4 sliders mirrored around X_MIRROR.
@@ -155,11 +155,11 @@ export const VOX_RIGHT = OSC_RIGHT;      // 980.25
 export const ENV_LEFT = DRIVE_LEFT;      // 996.25
 export const ENV_RIGHT = LFO_RIGHT;      // 2136
 
-/** Voice bbox — shifted 115px further from X_MIRROR than centred. */
+/** Voice bbox — shifted away from X_MIRROR than centred. */
 const VOX_ZONE_CENTRE = (VOX_LEFT + VOX_RIGHT) / 2;
-const CHART_PUSH_FROM_MIRROR = 115;
-export const VOX_BBOX_LEFT = VOX_ZONE_CENTRE - VOX_BBOX_WIDTH / 2 - CHART_PUSH_FROM_MIRROR;  // 168.625
-export const VOX_BBOX_RIGHT = VOX_BBOX_LEFT + VOX_BBOX_WIDTH;                                 // 784.625
+const CHART_PUSH_FROM_MIRROR = 55;
+export const VOX_BBOX_LEFT = VOX_ZONE_CENTRE - VOX_BBOX_WIDTH / 2 - CHART_PUSH_FROM_MIRROR;  // 228.625
+export const VOX_BBOX_RIGHT = VOX_BBOX_LEFT + VOX_BBOX_WIDTH;                                 // 844.625
 
 export const VOX_CHART_1_CX = VOX_BBOX_LEFT + VOX_CHART_WIDTH / 2;    // 318.625
 export const VOX_CHART_2_CX = VOX_BBOX_RIGHT - VOX_CHART_WIDTH / 2;   // 634.625
