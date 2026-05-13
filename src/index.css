@@ -202,16 +202,19 @@ code {
   position: absolute;
 }
 
-/* Zone X-positions are kept in sync with layout.ts — drive box is
-   centred on COL2, with borders at the midpoints between adjacent
-   knobs (drive/osc and drive/filter). */
-.psg-zone.perf  { left: 0;        top: 0;   width: 187px;   height: 757px; }
-.psg-zone.osc   { left: 203px;    top: 0;   width: 804.5px; height: 507px; }
-.psg-zone.drive { left: 1007.5px; top: 0;   width: 154px;   height: 507px; }
-.psg-zone.filt  { left: 1161.5px; top: 0;   width: 486.5px; height: 507px; }
-.psg-zone.lfo   { left: 1664px;   top: 0;   width: 472px;   height: 507px; }
-.psg-zone.vox   { left: 203px; top: 523px; width: 652px; height: 234px; }
-.psg-zone.env   { left: 871px; top: 523px; width: 1265px; height: 234px; }
+/* Zone X-positions are kept in sync with layout.ts — every adjacent
+   pair of fieldset boxes is separated by ZONE_GAP = 16px. Drive box is
+   centred on COL2, with its borders sitting half a gap inside each
+   knob-pair midpoint (drive/osc seam = mid(Shape,Drive); drive/filter
+   seam = mid(Drive,Cutoff)). Vox/env share the same X seam as
+   osc/drive so the row boundary aligns visually. */
+.psg-zone.perf  { left: 0;        top: 0;     width: 187px;    height: 757px; }
+.psg-zone.osc   { left: 203px;    top: 0;     width: 777.25px; height: 507px; }
+.psg-zone.drive { left: 996.25px; top: 0;     width: 157.25px; height: 507px; }
+.psg-zone.filt  { left: 1169.5px; top: 0;     width: 478.5px;  height: 507px; }
+.psg-zone.lfo   { left: 1664px;   top: 0;     width: 472px;    height: 507px; }
+.psg-zone.vox   { left: 203px;    top: 523px; width: 777.25px; height: 234px; }
+.psg-zone.env   { left: 996.25px; top: 523px; width: 1139.75px; height: 234px; }
 
 /* ─── Fieldset: bordered panel with a title that breaks the border ─ */
 

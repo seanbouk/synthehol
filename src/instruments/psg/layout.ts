@@ -43,56 +43,69 @@ export const Y_MIRROR = 515;
 // Knob grid: 4 columns × 2 rows
 // ──────────────────────────────────────────────────────────────────
 
-/** Horizontal spacing between adjacent knob columns. */
-export const KNOB_COL_SPACING = 154;
+/** Horizontal spacing between adjacent knob columns.
+ *  173.25 = 231 × 0.75 (original spacing reduced by 25%). */
+export const KNOB_COL_SPACING = 173.25;
 
-const KNOB_HALF_INNER = KNOB_COL_SPACING / 2;       // 77    — col 2 / col 3
-const KNOB_HALF_OUTER = KNOB_HALF_INNER * 3;        // 231   — col 1 / col 4
+const KNOB_HALF_INNER = KNOB_COL_SPACING / 2;       // 86.625  — col 2 / col 3
+const KNOB_HALF_OUTER = KNOB_HALF_INNER * 3;        // 259.875 — col 1 / col 4
 
 /** Column centres (X), in body coords. */
 export const KNOB_COLS = {
-  c1: X_MIRROR - KNOB_HALF_OUTER, // 930.5  — bottom-right of Oscillators
-  c2: X_MIRROR - KNOB_HALF_INNER, // 1084.5 — centre of Drive
-  c3: X_MIRROR + KNOB_HALF_INNER, // 1238.5 — left half of Filter
-  c4: X_MIRROR + KNOB_HALF_OUTER  // 1392.5 — right half of Filter
+  c1: X_MIRROR - KNOB_HALF_OUTER, // 901.625  — bottom-right of Oscillators
+  c2: X_MIRROR - KNOB_HALF_INNER, // 1074.875 — centre of Drive
+  c3: X_MIRROR + KNOB_HALF_INNER, // 1248.125 — left half of Filter
+  c4: X_MIRROR + KNOB_HALF_OUTER  // 1421.375 — right half of Filter
 } as const;
 
-export const KNOB_ROW_HALF_GAP = 75;
+/** Vertical half-gap between Y_MIRROR and a knob row centre.
+ *  112.5 = 75 × 1.5 (original gap increased by 50%). */
+export const KNOB_ROW_HALF_GAP = 112.5;
 
 /** Row centres (Y), in body coords. */
 export const KNOB_ROWS = {
-  r1: Y_MIRROR - KNOB_ROW_HALF_GAP, // 440 — top row (Shape/Drive/Cutoff/Reso)
-  r2: Y_MIRROR + KNOB_ROW_HALF_GAP  // 590 — bottom row (Attack/Decay/Sustain/Release)
+  r1: Y_MIRROR - KNOB_ROW_HALF_GAP, // 402.5 — top row (Shape/Drive/Cutoff/Reso)
+  r2: Y_MIRROR + KNOB_ROW_HALF_GAP  // 627.5 — bottom row (Attack/Decay/Sustain/Release)
 } as const;
 
 // ──────────────────────────────────────────────────────────────────
-// Zone X-positions — derived from knob columns where applicable.
+// Zone X-positions — derived from knob columns and a uniform gap.
 // ──────────────────────────────────────────────────────────────────
 
-/** Drive zone is centred on the Drive knob (COL2). Its borders are at
- *  the midpoints between adjacent knobs:
- *    left  = mid(Shape, Drive)  → also Oscillators' right border
- *    right = mid(Drive, Cutoff) → also Filter's left border */
-export const DRIVE_LEFT = (KNOB_COLS.c1 + KNOB_COLS.c2) / 2;   // 1007.5
-export const DRIVE_RIGHT = (KNOB_COLS.c2 + KNOB_COLS.c3) / 2;  // 1161.5 (= X_MIRROR)
-export const DRIVE_WIDTH = DRIVE_RIGHT - DRIVE_LEFT;            // 154
+/** Uniform horizontal gap between adjacent fieldset boxes — set to
+ *  match the existing filter/lfo gap. */
+export const ZONE_GAP = 16;
+const HALF_GAP = ZONE_GAP / 2;
 
-/** Filter — left follows from drive's right; right edge unchanged. */
-export const FILTER_LEFT = DRIVE_RIGHT;                         // 1161.5
+/** Gap centres (between adjacent knob columns).
+ *  Each zone border sits HALF_GAP away from the relevant gap centre,
+ *  so the actual gap between adjacent boxes is always exactly ZONE_GAP. */
+const GAP_OSC_DRIVE   = (KNOB_COLS.c1 + KNOB_COLS.c2) / 2;  // 988.25  — mid(Shape, Drive)
+const GAP_DRIVE_FILT  = (KNOB_COLS.c2 + KNOB_COLS.c3) / 2;  // 1161.5  — mid(Drive, Cutoff) (= X_MIRROR)
+
+/** Drive box — centred on COL2; borders sit HALF_GAP off the gap
+ *  centres so the actual gap to neighbour boxes is ZONE_GAP. */
+export const DRIVE_LEFT = GAP_OSC_DRIVE + HALF_GAP;            // 996.25
+export const DRIVE_RIGHT = GAP_DRIVE_FILT - HALF_GAP;          // 1153.5
+export const DRIVE_WIDTH = DRIVE_RIGHT - DRIVE_LEFT;           // 157.25
+
+/** Filter — left mirrors drive's right via the same gap; right edge
+ *  fixed (the filter/lfo gap is already ZONE_GAP). */
+export const FILTER_LEFT = GAP_DRIVE_FILT + HALF_GAP;          // 1169.5
 export const FILTER_RIGHT = 1648;
-export const FILTER_WIDTH = FILTER_RIGHT - FILTER_LEFT;         // 486.5
+export const FILTER_WIDTH = FILTER_RIGHT - FILTER_LEFT;        // 478.5
 
-/** Oscillators — right edge follows from drive's left; left edge fixed
- *  (so the Wheels zone keeps its column on the left). */
+/** Oscillators — right edge sits HALF_GAP before the osc/drive gap
+ *  centre. Left edge unchanged. */
 export const OSC_LEFT = 203;
-export const OSC_RIGHT = DRIVE_LEFT;                            // 1007.5
-export const OSC_WIDTH = OSC_RIGHT - OSC_LEFT;                  // 804.5
+export const OSC_RIGHT = GAP_OSC_DRIVE - HALF_GAP;             // 980.25
+export const OSC_WIDTH = OSC_RIGHT - OSC_LEFT;                 // 777.25
 
 /** LFO — unchanged. */
 export const LFO_LEFT = 1664;
 export const LFO_RIGHT = 2136;
-export const LFO_WIDTH = LFO_RIGHT - LFO_LEFT;                  // 472
-export const LFO_CX = (LFO_LEFT + LFO_RIGHT) / 2;               // 1900
+export const LFO_WIDTH = LFO_RIGHT - LFO_LEFT;                 // 472
+export const LFO_CX = (LFO_LEFT + LFO_RIGHT) / 2;              // 1900
 
 // ──────────────────────────────────────────────────────────────────
 // Vsliders — 4 sliders mirrored around X_MIRROR.
@@ -130,20 +143,27 @@ export const VOX_CHART_HEIGHT = 180;
 export const VOX_CHART_GAP = 16;
 export const VOX_BBOX_WIDTH = 2 * VOX_CHART_WIDTH + VOX_CHART_GAP; // 616
 
-/** Voice bbox is centred inside the vox zone (still at x=203..855). */
-const VOX_ZONE_CENTRE = (203 + 855) / 2; // 529
-export const VOX_BBOX_LEFT = VOX_ZONE_CENTRE - VOX_BBOX_WIDTH / 2;   // 221
-export const VOX_BBOX_RIGHT = VOX_BBOX_LEFT + VOX_BBOX_WIDTH;         // 837
+/** Bottom-row zones — share the osc/drive seam so the row boundary
+ *  visually aligns with the top row. Uniform ZONE_GAP between them. */
+export const VOX_LEFT = OSC_LEFT;        // 203
+export const VOX_RIGHT = OSC_RIGHT;      // 980.25
+export const ENV_LEFT = DRIVE_LEFT;      // 996.25
+export const ENV_RIGHT = LFO_RIGHT;      // 2136
 
-export const VOX_CHART_1_CX = VOX_BBOX_LEFT + VOX_CHART_WIDTH / 2;    // 371
-export const VOX_CHART_2_CX = VOX_BBOX_RIGHT - VOX_CHART_WIDTH / 2;   // 687
+/** Voice bbox is centred inside the vox zone. */
+const VOX_ZONE_CENTRE = (VOX_LEFT + VOX_RIGHT) / 2;                  // 591.625
+export const VOX_BBOX_LEFT = VOX_ZONE_CENTRE - VOX_BBOX_WIDTH / 2;   // 283.625
+export const VOX_BBOX_RIGHT = VOX_BBOX_LEFT + VOX_BBOX_WIDTH;         // 899.625
+
+export const VOX_CHART_1_CX = VOX_BBOX_LEFT + VOX_CHART_WIDTH / 2;    // 433.625
+export const VOX_CHART_2_CX = VOX_BBOX_RIGHT - VOX_CHART_WIDTH / 2;   // 749.625
 
 /** Env chart bbox is the mirror image of the voice bbox around X_MIRROR. */
-export const ENV_CHART_LEFT = 2 * X_MIRROR - VOX_BBOX_RIGHT;   // 1486
-export const ENV_CHART_RIGHT = 2 * X_MIRROR - VOX_BBOX_LEFT;   // 2102
+export const ENV_CHART_LEFT = 2 * X_MIRROR - VOX_BBOX_RIGHT;   // 1423.375
+export const ENV_CHART_RIGHT = 2 * X_MIRROR - VOX_BBOX_LEFT;   // 2039.375
 export const ENV_CHART_WIDTH = VOX_BBOX_WIDTH;                 // 616
 export const ENV_CHART_HEIGHT = VOX_CHART_HEIGHT;              // 180
-export const ENV_CHART_CX = (ENV_CHART_LEFT + ENV_CHART_RIGHT) / 2; // 1794
+export const ENV_CHART_CX = (ENV_CHART_LEFT + ENV_CHART_RIGHT) / 2; // 1731.375
 
 /** Y centre for voice and envelope charts (in body coords). */
 export const CHART_Y = 640;
