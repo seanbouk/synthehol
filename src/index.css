@@ -147,15 +147,15 @@ code {
   border-radius: 3px;
 }
 
-/* ─── Device tab + PSG panel ────────────────────────────────────── */
+/* ─── Stage-bearing tabs (device PSG, drums, …) ─────────────────── */
 
-.device-tab {
+.stage-tab {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
-.device-stage-wrap {
+.stage-wrap {
   flex: 1;
   min-height: 0;
 }
@@ -221,9 +221,9 @@ code {
   margin: 12px 16px 16px 16px;
 }
 
-/* ─── PSG Stage: 2200×800 fixed surface, uniform CSS scale to fit ── */
+/* ─── Stage: 2240×800 fixed surface, uniform CSS scale to fit ────── */
 
-.psg-stage {
+.stage {
   position: relative;
   width: 100%;
   height: 100%;
@@ -233,7 +233,7 @@ code {
   overflow: hidden;
 }
 
-.psg-stage-inner {
+.stage-inner {
   width: 2240px;
   height: 800px;
   flex-shrink: 0;
@@ -668,4 +668,307 @@ button.btn-seg.active:disabled {
 .slider.disabled input[type="range"] {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* ─── Drums panel ────────────────────────────────────────────────── */
+/*
+ * Lays out on the same 2240×800 Stage as PSG, but with a finer 28×10
+ * sub-cell grid (80 px each). See src/instruments/drums/grid.ts and
+ * layout.ts for the geometry. Regions are absolutely positioned inside
+ * .drums-body; vertical teal rules separate the side panels from the
+ * step grid (the same visual treatment as PSG's section rules).
+ */
+
+.drums-body {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2240px;
+  height: 800px;
+}
+
+.drums-region {
+  /* base — children are flex-laid-out per-region below */
+}
+
+/* ── Top strip ─────────────────────────────────────────────────── */
+
+.drums-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+
+.drums-top-left,
+.drums-top-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.drums-kit-name {
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.drums-mode-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.drums-mode-tab {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+}
+.drums-mode-tab.active {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.drums-pattern-id {
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.drums-tempo {
+  font-size: 16px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  min-width: 80px;
+  text-align: center;
+}
+
+.drums-tempo-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+button.drums-tempo-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button.drums-tempo-btn:hover { color: var(--text); border-color: var(--muted); }
+
+/* ── Left panel — 8 lane label strips ──────────────────────────── */
+
+.drums-left {
+  display: flex;
+  flex-direction: column;
+  /* Each lane row is 80 px tall, matching one sub-cell row, so labels
+     line up perfectly with the step grid rows on the right. */
+}
+
+.drums-lane-label {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.drums-lane-label:last-child { border-bottom: 0; }
+
+.drums-lane-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+.drums-lane-color[data-lane="0"] { background: #ef4444; color: rgba(239, 68,  68, 0.6); }
+.drums-lane-color[data-lane="1"] { background: #f97316; color: rgba(249, 115, 22, 0.6); }
+.drums-lane-color[data-lane="2"] { background: #fbbf24; color: rgba(251, 191, 36, 0.6); }
+.drums-lane-color[data-lane="3"] { background: #eab308; color: rgba(234, 179,  8, 0.6); }
+.drums-lane-color[data-lane="4"] { background: #84cc16; color: rgba(132, 204, 22, 0.6); }
+.drums-lane-color[data-lane="5"] { background: #14b8a6; color: rgba( 20, 184, 166, 0.6); }
+.drums-lane-color[data-lane="6"] { background: #60a5fa; color: rgba( 96, 165, 250, 0.6); }
+.drums-lane-color[data-lane="7"] { background: #a78bfa; color: rgba(167, 139, 250, 0.6); }
+
+.drums-lane-name {
+  flex: 1;
+  font-size: 18px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.drums-lane-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.drums-lane-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ── Step grid — 16 × 8 cells, hard-coded to match 80 px sub-cells ── */
+
+.drums-grid {
+  display: grid;
+  grid-template-columns: repeat(16, 80px);
+  grid-template-rows: repeat(8, 80px);
+}
+
+button.drums-step {
+  /* Each step occupies one 80×80 sub-cell. Inset the visible "pad"
+     inside the cell so adjacent pads have visible gaps. Authored as
+     a <button> so it gets focus/keyboard handling for free; we reset
+     the user-agent styling explicitly. */
+  position: relative;
+  margin: 6px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.015);
+  cursor: pointer;
+  transition: transform 60ms ease, box-shadow 80ms ease;
+}
+button.drums-step:hover { border-color: var(--muted); }
+button.drums-step:active { transform: scale(0.96); }
+button.drums-step:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Downbeat — first step of each beat is slightly brighter background
+   so the 4×4 sub-rhythm reads at a glance. */
+.drums-step.beat {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Lit step — filled with the lane's colour. Same palette as the
+   lane-label dots, keyed off data-lane. */
+.drums-step.on {
+  border-color: transparent;
+}
+.drums-step.on[data-lane="0"] { background: #ef4444; box-shadow: 0 0 14px rgba(239, 68,  68, 0.5); }
+.drums-step.on[data-lane="1"] { background: #f97316; box-shadow: 0 0 14px rgba(249, 115, 22, 0.5); }
+.drums-step.on[data-lane="2"] { background: #fbbf24; box-shadow: 0 0 14px rgba(251, 191, 36, 0.5); }
+.drums-step.on[data-lane="3"] { background: #eab308; box-shadow: 0 0 14px rgba(234, 179,  8, 0.5); }
+.drums-step.on[data-lane="4"] { background: #84cc16; box-shadow: 0 0 14px rgba(132, 204, 22, 0.5); }
+.drums-step.on[data-lane="5"] { background: #14b8a6; box-shadow: 0 0 14px rgba( 20, 184, 166, 0.5); }
+.drums-step.on[data-lane="6"] { background: #60a5fa; box-shadow: 0 0 14px rgba( 96, 165, 250, 0.5); }
+.drums-step.on[data-lane="7"] { background: #a78bfa; box-shadow: 0 0 14px rgba(167, 139, 250, 0.5); }
+
+/* Playhead — current step column gets a subtle outline pulse. Applied
+   on top of beat/on styling. The outline uses the accent so a lit step
+   still reads as lit underneath. */
+.drums-step.playhead {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* ── Right panel — contextual parameters / display ─────────────── */
+
+.drums-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 20px;
+  gap: 16px;
+}
+
+.drums-context-header {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.drums-context-hint {
+  font-size: 14px;
+  color: var(--disabled-soft);
+  text-align: center;
+  font-style: italic;
+}
+
+.drums-context-display {
+  width: 100%;
+  flex: 1;
+  background: var(--canvas);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+/* ── Bottom strip ──────────────────────────────────────────────── */
+
+.drums-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+
+.drums-bottom-left,
+.drums-bottom-center,
+.drums-bottom-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.drums-bottom-center { gap: 12px; }
+
+.drums-transport {
+  font-size: 22px;
+  color: var(--muted);
+  min-width: 36px;
+  text-align: center;
+}
+
+button.drums-transport {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 22px;
+  color: var(--text);
+  cursor: pointer;
+}
+button.drums-transport:hover { border-color: var(--muted); }
+button.drums-transport.on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.drums-transport.drums-rec { color: var(--error); }
+
+.drums-page-dots {
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+
+.drums-muted {
+  font-size: 14px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }

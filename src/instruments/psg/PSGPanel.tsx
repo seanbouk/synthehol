@@ -9,7 +9,7 @@ import { usePSGPerf, usePSGPerfStore } from './psg-perf-state';
 import type { PSGParams } from './psg-defaults';
 import { WaveformPreview } from './WaveformPreview';
 import { ADSRCurve } from './ADSRCurve';
-import { Stage } from './Stage';
+import { Stage } from '../../ui-kit/Stage';
 import { cellCentre } from './grid';
 import {
   KNOBS,

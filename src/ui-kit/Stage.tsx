@@ -1,16 +1,21 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { STAGE_W, STAGE_H } from './grid';
 
 /**
- * Fixed 2240×800 design surface (14×5 cells × 160 px), uniformly CSS-
- * scaled to fit whatever container it sits in. Children are absolutely
- * positioned in stage coordinates and never reflow — the whole stage
- * just scales.
+ * Shared 14:5 design surface — 2240×800 px, uniformly CSS-scaled to fit
+ * its container. Children are absolutely positioned in stage coords and
+ * never reflow; the whole stage just scales.
  *
- * Base is 2240×800 (= 2.8:1, 14:5) — picked so every PSG panel control
- * lands on a 160 px grid cell.
+ * Instruments lay out on this canvas at whatever grid granularity suits
+ * them:
+ *   - PSG     14×5  cells of 160 px  (see src/instruments/psg/grid.ts)
+ *   - Drums   28×10 cells of  80 px  (see src/instruments/drums/grid.ts)
+ *
+ * Both grids resolve to the same 2240×800 surface, so the Stage stays a
+ * pure visual host and never needs to know which instrument it's
+ * presenting.
  */
-export { STAGE_W, STAGE_H };
+export const STAGE_W = 2240;
+export const STAGE_H = 800;
 
 export function Stage({ children }: { children: ReactNode }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,9 +37,9 @@ export function Stage({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="psg-stage" ref={containerRef}>
+    <div className="stage" ref={containerRef}>
       <div
-        className="psg-stage-inner"
+        className="stage-inner"
         style={{ transform: `scale(${scale})` }}
       >
         {children}

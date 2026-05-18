@@ -14,8 +14,8 @@ export function DeviceTab({ deviceId }: { deviceId: string }) {
   }
 
   return (
-    <div className="device-tab">
-      <div className="device-stage-wrap">
+    <div className="stage-tab">
+      <div className="stage-wrap">
         <PSGPanel deviceId={deviceId} />
       </div>
     </div>
