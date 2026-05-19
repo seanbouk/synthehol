@@ -784,8 +784,16 @@ button.drums-tempo-btn:hover { color: var(--text); border-color: var(--muted); }
   gap: 14px;
   padding: 0 20px 0 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  user-select: none;
+  transition: background 80ms ease;
 }
 .drums-lane-label:last-child { border-bottom: 0; }
+.drums-lane-label:hover { background: rgba(255, 255, 255, 0.025); }
+.drums-lane-label.selected {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
 
 .drums-lane-color {
   width: 14px;
@@ -886,6 +894,45 @@ button.drums-step:focus-visible {
   outline-offset: -2px;
 }
 
+/* Selected — held step shows a thicker, brighter outline. Overrides
+   playhead because selection is a deliberate user act. */
+.drums-step.selected {
+  outline: 3px solid var(--text);
+  outline-offset: -3px;
+  z-index: 2;
+}
+
+/* Out-of-range — past the lane's length cutoff. Inert and very dim
+   so the user sees the lane boundary at a glance. */
+.drums-step.out-of-range {
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+/* Muted step — same fill as on, but dimmed to flag "won't fire". */
+.drums-step.muted {
+  filter: saturate(0.4);
+}
+
+/* Meta indicator — a small dot in the top-right corner for steps
+   that have non-default per-step params (ratchet, condition,
+   probability). Helps spot "loaded" steps at a glance, on or off. */
+.drums-step .drums-step-meta {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(167, 139, 250, 0.6);
+  pointer-events: none;
+}
+.drums-step.on .drums-step-meta {
+  background: var(--text);
+  box-shadow: none;
+}
+
 /* ── Right panel — contextual parameters / display ─────────────── */
 
 .drums-right {
@@ -972,3 +1019,109 @@ button.drums-transport.on {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Parameter editor (right panel content) ─────────────────────── */
+
+.drums-editor {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 20px 18px;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.drums-editor.empty {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+}
+
+.drums-editor-header {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  margin-bottom: 2px;
+}
+
+.drums-editor-hint {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: auto;
+}
+
+/* The condition picker stacks two button-group rows. */
+.drums-cond-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── HSlider (horizontal slider for compact param editors) ──────── */
+
+.hslider {
+  display: grid;
+  grid-template-columns: 70px 1fr 60px;
+  align-items: center;
+  gap: 10px;
+  height: 28px;
+}
+
+.hslider-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.hslider-track {
+  position: relative;
+  background: linear-gradient(
+    to bottom,
+    #0d0a08 0%,
+    #1f1b18 50%,
+    #0d0a08 100%
+  );
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: ew-resize;
+  user-select: none;
+}
+
+.hslider-fill {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  background: var(--accent);
+  opacity: 0.4;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.hslider-cap {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--text);
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.hslider-value {
+  font-size: 11px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.hslider.disabled .hslider-track { cursor: not-allowed; }
+.hslider.disabled .hslider-fill { background: var(--disabled-strong); opacity: 0.3; }
+.hslider.disabled .hslider-cap { background: var(--disabled-soft); box-shadow: none; }
+.hslider.disabled .hslider-label,
+.hslider.disabled .hslider-value { color: var(--disabled-soft); }

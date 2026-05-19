@@ -1,94 +1,191 @@
 /**
- * Drums state — pattern and transport.
+ * Drums state — pattern, transport, and selection.
  *
- * Single source of truth for the drum machine. The sequencer reads
- * pattern + bpm to schedule hits; the UI reads currentStep to render
- * the playhead and pattern[][] to render lit cells. Step toggles and
- * transport actions go through this store.
+ * Pattern shape: a single 16-step pattern containing 8 lanes; each
+ * lane has its own length (1..16) so different lanes can loop at
+ * different rates — polymetric by default. Each step carries the
+ * full Hapax-style per-step parameter set.
  *
- * Spine milestone: one fixed-length 16-step pattern, 8 lanes, no
- * per-step parameters yet besides on/velocity. Multi-pattern + per-
- * step depth land in later milestones.
+ * Selection identifies what the right panel is editing — a step, a
+ * lane, or nothing. Hold-to-edit interactions set this.
+ *
+ * Multi-pattern + chain land in a later phase.
  */
 
 import { create } from 'zustand';
 
+// ─────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────
+
+export type Ratchet = 1 | 2 | 3 | 4 | 6 | 8;
+
+export const RATCHET_VALUES: readonly Ratchet[] = [1, 2, 3, 4, 6, 8];
+
+/**
+ * Conditional trig — gates a step on the lane's current loop count.
+ *   none        always plays (when on)
+ *   every  N    plays on loops N, 2N, 3N…   (so 1-in-N)
+ *   notEvery N  plays except on those loops (so (N-1)-in-N)
+ *
+ * "Loop" here means a full pass of the lane (lane.length steps).
+ */
+export type ConditionN = 2 | 3 | 4 | 8;
+export const CONDITION_N_VALUES: readonly ConditionN[] = [2, 3, 4, 8];
+
+export type StepCondition =
+  | { kind: 'none' }
+  | { kind: 'every'; n: ConditionN }
+  | { kind: 'notEvery'; n: ConditionN };
+
 export interface StepState {
   on: boolean;
-  velocity: number; // 0..1
+  mute: boolean;
+  velocity: number;        // 0..1
+  length: number;          // 0.05..4.0 — fraction of one step
+  uTime: number;           // -0.5..+0.5 — fraction of one step
+  probability: number;     // 0..1
+  ratchet: Ratchet;
+  condition: StepCondition;
 }
+
+export interface LaneState {
+  /** Active step count (1..PATTERN_STEPS). Steps beyond don't play. */
+  length: number;
+  /** Always PATTERN_STEPS long; only first `length` are active. */
+  steps: StepState[];
+}
+
+export interface PatternState {
+  lanes: LaneState[]; // PATTERN_LANES long
+}
+
+export type Selection =
+  | { kind: 'none' }
+  | { kind: 'step'; lane: number; step: number }
+  | { kind: 'lane'; lane: number };
+
+// ─────────────────────────────────────────────────────────────────────
+// Constants
+// ─────────────────────────────────────────────────────────────────────
 
 export const PATTERN_LANES = 8;
 export const PATTERN_STEPS = 16;
-export const DEFAULT_VELOCITY = 0.9;
 
-/** Make an empty pattern (all steps off, default velocity). */
-function emptyPattern(): StepState[][] {
-  return Array.from({ length: PATTERN_LANES }, () =>
-    Array.from({ length: PATTERN_STEPS }, () => ({
-      on: false,
-      velocity: DEFAULT_VELOCITY
-    }))
-  );
+export const DEFAULT_STEP: StepState = {
+  on: false,
+  mute: false,
+  velocity: 0.9,
+  length: 1.0,
+  uTime: 0,
+  probability: 1.0,
+  ratchet: 1,
+  condition: { kind: 'none' }
+};
+
+// ─────────────────────────────────────────────────────────────────────
+// Pattern construction
+// ─────────────────────────────────────────────────────────────────────
+
+function emptyLane(): LaneState {
+  return {
+    length: PATTERN_STEPS,
+    steps: Array.from({ length: PATTERN_STEPS }, () => ({ ...DEFAULT_STEP }))
+  };
 }
 
-/**
- * Seed pattern — a recognisable four-on-the-floor with hats, used as
- * the spine-milestone starter so the engine has something to play
- * immediately. We can ditch this once we have a save/load layer.
- */
-function seedPattern(): StepState[][] {
+function emptyPattern(): PatternState {
+  return {
+    lanes: Array.from({ length: PATTERN_LANES }, () => emptyLane())
+  };
+}
+
+/** Seed pattern — four-on-the-floor groove for the spine starter. */
+function seedPattern(): PatternState {
   const p = emptyPattern();
+  const turnOn = (lane: number, step: number) => {
+    p.lanes[lane]!.steps[step]!.on = true;
+  };
   // KICK every quarter
-  for (const s of [0, 4, 8, 12]) p[0]![s]!.on = true;
+  for (const s of [0, 4, 8, 12]) turnOn(0, s);
   // SNR backbeats
-  for (const s of [4, 12]) p[1]![s]!.on = true;
+  for (const s of [4, 12]) turnOn(1, s);
   // CHH every 8th
-  for (let s = 0; s < 16; s += 2) p[2]![s]!.on = true;
+  for (let s = 0; s < 16; s += 2) turnOn(2, s);
   // OHH off-beat
-  p[3]![6]!.on = true;
-  p[3]![14]!.on = true;
+  turnOn(3, 6);
+  turnOn(3, 14);
   return p;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Store
+// ─────────────────────────────────────────────────────────────────────
+
 interface DrumsStateShape {
-  pattern: StepState[][];
+  pattern: PatternState;
   isPlaying: boolean;
   bpm: number;
-  /** -1 when stopped; 0..PATTERN_STEPS-1 while playing. Set by scheduler. */
-  currentStep: number;
+  /** Per-lane step pointer for the visual playhead — entries are -1
+   *  when stopped, otherwise 0..lane.length-1. Polymetric lanes
+   *  advance at their own rates. */
+  currentStepPerLane: number[];
+
+  selection: Selection;
 
   toggleStep(lane: number, step: number): void;
-  setStepVelocity(lane: number, step: number, velocity: number): void;
+  setStepParam<K extends keyof StepState>(
+    lane: number,
+    step: number,
+    name: K,
+    value: StepState[K]
+  ): void;
+  setLaneLength(lane: number, length: number): void;
   setBpm(bpm: number): void;
   setPlaying(isPlaying: boolean): void;
-  setCurrentStep(step: number): void;
+  setCurrentStepForLane(lane: number, step: number): void;
+  resetPlayheads(): void;
+  setSelection(selection: Selection): void;
   clearPattern(): void;
 }
+
+const STOPPED_PLAYHEADS = Array.from({ length: PATTERN_LANES }, () => -1);
 
 export const useDrumsStore = create<DrumsStateShape>((set) => ({
   pattern: seedPattern(),
   isPlaying: false,
   bpm: 120,
-  currentStep: -1,
+  currentStepPerLane: STOPPED_PLAYHEADS.slice(),
+  selection: { kind: 'none' },
 
   toggleStep(lane, step) {
     set((s) => {
-      const next = s.pattern.map((row) => row.slice());
-      const cell = next[lane]?.[step];
+      const cell = s.pattern.lanes[lane]?.steps[step];
       if (!cell) return s;
-      next[lane]![step] = { ...cell, on: !cell.on };
-      return { pattern: next };
+      return {
+        pattern: updateStep(s.pattern, lane, step, { on: !cell.on })
+      };
     });
   },
 
-  setStepVelocity(lane, step, velocity) {
+  setStepParam(lane, step, name, value) {
     set((s) => {
-      const next = s.pattern.map((row) => row.slice());
-      const cell = next[lane]?.[step];
+      const cell = s.pattern.lanes[lane]?.steps[step];
       if (!cell) return s;
-      next[lane]![step] = { ...cell, velocity };
-      return { pattern: next };
+      return {
+        pattern: updateStep(s.pattern, lane, step, { [name]: value } as Partial<StepState>)
+      };
+    });
+  },
+
+  setLaneLength(lane, length) {
+    const clamped = Math.max(1, Math.min(PATTERN_STEPS, Math.round(length)));
+    set((s) => {
+      const ln = s.pattern.lanes[lane];
+      if (!ln) return s;
+      const lanes = s.pattern.lanes.slice();
+      lanes[lane] = { ...ln, length: clamped };
+      return { pattern: { lanes } };
     });
   },
 
@@ -97,14 +194,53 @@ export const useDrumsStore = create<DrumsStateShape>((set) => ({
   },
 
   setPlaying(isPlaying) {
-    set({ isPlaying, currentStep: isPlaying ? 0 : -1 });
+    set({
+      isPlaying,
+      currentStepPerLane: isPlaying
+        ? Array.from({ length: PATTERN_LANES }, () => 0)
+        : STOPPED_PLAYHEADS.slice()
+    });
   },
 
-  setCurrentStep(step) {
-    set({ currentStep: step });
+  setCurrentStepForLane(lane, step) {
+    set((s) => {
+      if (lane < 0 || lane >= PATTERN_LANES) return s;
+      const next = s.currentStepPerLane.slice();
+      next[lane] = step;
+      return { currentStepPerLane: next };
+    });
+  },
+
+  resetPlayheads() {
+    set({ currentStepPerLane: STOPPED_PLAYHEADS.slice() });
+  },
+
+  setSelection(selection) {
+    set({ selection });
   },
 
   clearPattern() {
-    set({ pattern: emptyPattern() });
+    set({ pattern: emptyPattern(), selection: { kind: 'none' } });
   }
 }));
+
+// ─────────────────────────────────────────────────────────────────────
+// Internal helpers — immutable structural updates
+// ─────────────────────────────────────────────────────────────────────
+
+function updateStep(
+  pattern: PatternState,
+  laneIdx: number,
+  stepIdx: number,
+  changes: Partial<StepState>
+): PatternState {
+  const lane = pattern.lanes[laneIdx];
+  if (!lane) return pattern;
+  const oldStep = lane.steps[stepIdx];
+  if (!oldStep) return pattern;
+  const newSteps = lane.steps.slice();
+  newSteps[stepIdx] = { ...oldStep, ...changes };
+  const newLanes = pattern.lanes.slice();
+  newLanes[laneIdx] = { ...lane, steps: newSteps };
+  return { lanes: newLanes };
+}
