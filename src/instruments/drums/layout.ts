@@ -34,11 +34,13 @@ export const BOTTOM_STRIP = cellRect( 1, 10, 28, 10); // 0, 720, 2240, 80
 export const GUTTER_LEFT  = cellRect( 6, 2,  6, 9); // col 6
 export const GUTTER_RIGHT = cellRect(23, 2, 23, 9); // col 23
 
-// Button columns live inside col 5, split into two 40 px half-cells
-// that span rows 2..9 (matching the grid's 8 lane rows).
+// Button columns live in the right half of col 5 + left half of col
+// 6 — shifted half a sub-cell right of straight col 5 so the gap to
+// the grid is 40 px instead of 80 px (the lane labels gain a matching
+// 40 px breather on their right edge).
 const BTN_W = CELL / 2; // 40
-const BTN_LEFT_X  = cellRect(5, 2, 5, 9).x;            // 320
-const BTN_RIGHT_X = BTN_LEFT_X + BTN_W;                // 360
+const BTN_LEFT_X  = cellRect(5, 2, 5, 9).x + BTN_W;    // 360
+const BTN_RIGHT_X = BTN_LEFT_X + BTN_W;                // 400
 const BTN_TOP_Y   = cellRect(5, 2, 5, 9).y;            // 80
 const BTN_H       = cellRect(5, 2, 5, 9).height / 8;   // 80 (one row tall)
 
