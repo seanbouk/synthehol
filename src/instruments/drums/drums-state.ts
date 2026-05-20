@@ -1,13 +1,14 @@
 /**
- * Drums state — pattern, transport, and selection.
+ * Drums state — pattern, transport, and edit mode.
  *
- * Pattern shape: a single 16-step pattern containing 8 lanes; each
- * lane has its own length (1..16) so different lanes can loop at
- * different rates — polymetric by default. Each step carries the
- * full Hapax-style per-step parameter set.
+ * Pattern: one 16-step pattern with 8 lanes; each lane has its own
+ * length so lanes can be polymetric. Each step carries the full
+ * Hapax-style per-step parameter set.
  *
- * Selection identifies what the right panel is editing — a step, a
- * lane, or nothing. Hold-to-edit interactions set this.
+ * Edit mode: pick a parameter (editParam) AND a lane (editLane) and
+ * the whole 8×16 grid switches into a bar-chart editor for that one
+ * lane's one parameter across all steps. Both must be set for edit
+ * mode to be active; pressing either picker again clears it.
  *
  * Multi-pattern + chain land in a later phase.
  */
@@ -18,9 +19,10 @@ import { create } from 'zustand';
 // Types
 // ─────────────────────────────────────────────────────────────────────
 
-export type Ratchet = 1 | 2 | 3 | 4 | 6 | 8;
+/** All 1..8 are valid so the bar-chart editor maps cleanly to 8 rows. */
+export type Ratchet = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
-export const RATCHET_VALUES: readonly Ratchet[] = [1, 2, 3, 4, 6, 8];
+export const RATCHET_VALUES: readonly Ratchet[] = [1, 2, 3, 4, 5, 6, 7, 8];
 
 /**
  * Conditional trig — gates a step on the lane's current loop count.
@@ -40,7 +42,6 @@ export type StepCondition =
 
 export interface StepState {
   on: boolean;
-  mute: boolean;
   velocity: number;        // 0..1
   length: number;          // 0.05..4.0 — fraction of one step
   uTime: number;           // -0.5..+0.5 — fraction of one step
@@ -60,10 +61,16 @@ export interface PatternState {
   lanes: LaneState[]; // PATTERN_LANES long
 }
 
-export type Selection =
-  | { kind: 'none' }
-  | { kind: 'step'; lane: number; step: number }
-  | { kind: 'lane'; lane: number };
+/** Parameters that can be edited via the in-grid editor. Velocity,
+ *  length, probability, and ratchet use a bar-chart cell layout;
+ *  µTime uses a dedicated nudge-column layout. Mute is gone — set
+ *  velocity to 0 to silence a step. Condition isn't editable yet. */
+export type EditParam =
+  | 'velocity'
+  | 'length'
+  | 'uTime'
+  | 'probability'
+  | 'ratchet';
 
 // ─────────────────────────────────────────────────────────────────────
 // Constants
@@ -74,7 +81,6 @@ export const PATTERN_STEPS = 16;
 
 export const DEFAULT_STEP: StepState = {
   on: false,
-  mute: false,
   velocity: 0.9,
   length: 1.0,
   uTime: 0,
@@ -126,12 +132,12 @@ interface DrumsStateShape {
   pattern: PatternState;
   isPlaying: boolean;
   bpm: number;
-  /** Per-lane step pointer for the visual playhead — entries are -1
-   *  when stopped, otherwise 0..lane.length-1. Polymetric lanes
-   *  advance at their own rates. */
+  /** Per-lane visual playhead — entries are -1 when stopped. */
   currentStepPerLane: number[];
 
-  selection: Selection;
+  /** Edit-mode picker state. Edit mode is active iff both are non-null. */
+  editParam: EditParam | null;
+  editLane: number | null;
 
   toggleStep(lane: number, step: number): void;
   setStepParam<K extends keyof StepState>(
@@ -140,12 +146,19 @@ interface DrumsStateShape {
     name: K,
     value: StepState[K]
   ): void;
+  /** Multi-field step update — merges `partial` into the step. */
+  patchStep(lane: number, step: number, partial: Partial<StepState>): void;
   setLaneLength(lane: number, length: number): void;
   setBpm(bpm: number): void;
   setPlaying(isPlaying: boolean): void;
   setCurrentStepForLane(lane: number, step: number): void;
   resetPlayheads(): void;
-  setSelection(selection: Selection): void;
+  /** Press an edit-button: select that param, or clear if already selected. */
+  toggleEditParam(param: EditParam): void;
+  /** Press an instrument button: select that lane, or clear if already selected. */
+  toggleEditLane(lane: number): void;
+  /** Clear edit mode entirely. */
+  exitEditMode(): void;
   clearPattern(): void;
 }
 
@@ -156,7 +169,8 @@ export const useDrumsStore = create<DrumsStateShape>((set) => ({
   isPlaying: false,
   bpm: 120,
   currentStepPerLane: STOPPED_PLAYHEADS.slice(),
-  selection: { kind: 'none' },
+  editParam: null,
+  editLane: null,
 
   toggleStep(lane, step) {
     set((s) => {
@@ -175,6 +189,14 @@ export const useDrumsStore = create<DrumsStateShape>((set) => ({
       return {
         pattern: updateStep(s.pattern, lane, step, { [name]: value } as Partial<StepState>)
       };
+    });
+  },
+
+  patchStep(lane, step, partial) {
+    set((s) => {
+      const cell = s.pattern.lanes[lane]?.steps[step];
+      if (!cell) return s;
+      return { pattern: updateStep(s.pattern, lane, step, partial) };
     });
   },
 
@@ -215,12 +237,36 @@ export const useDrumsStore = create<DrumsStateShape>((set) => ({
     set({ currentStepPerLane: STOPPED_PLAYHEADS.slice() });
   },
 
-  setSelection(selection) {
-    set({ selection });
+  toggleEditParam(param) {
+    // Pressing the active edit button exits edit mode entirely — both
+    // columns reset, so re-entering needs two clicks again. Pressing
+    // a different edit button just switches the param (lane stays).
+    set((s) =>
+      s.editParam === param
+        ? { editParam: null, editLane: null }
+        : { editParam: param }
+    );
+  },
+
+  toggleEditLane(lane) {
+    // Same exit-resets-both behaviour as toggleEditParam.
+    set((s) =>
+      s.editLane === lane
+        ? { editParam: null, editLane: null }
+        : { editLane: lane }
+    );
+  },
+
+  exitEditMode() {
+    set({ editParam: null, editLane: null });
   },
 
   clearPattern() {
-    set({ pattern: emptyPattern(), selection: { kind: 'none' } });
+    set({
+      pattern: emptyPattern(),
+      editParam: null,
+      editLane: null
+    });
   }
 }));
 
