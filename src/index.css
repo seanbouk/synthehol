@@ -1161,24 +1161,70 @@ button.drums-step.utime-down  { color: #f6c08c; }
 button.drums-step.utime-up:hover    { background: rgba(212, 252, 146, 0.08); border-color: rgba(212, 252, 146, 0.3); }
 button.drums-step.utime-down:hover  { background: rgba(246, 192, 140, 0.08); border-color: rgba(246, 192, 140, 0.3); }
 
-/* Display cell — bigger, brighter, current-value readout. */
+/* Display cell — bigger, brighter, reads the live µTime value.
+   When the step is on, the display tints with the lane colour so
+   users can see at a glance which columns have notes. */
 button.drums-step.utime-display {
   font-size: 16px;
   font-weight: 600;
   color: var(--text);
   background: rgba(255, 255, 255, 0.04);
-  border-bottom: none;
-  border-radius: 6px 6px 0 0;
 }
 
-/* Reset cell — sits directly under display, visually joined to it. */
+button.drums-step.utime-display.has-note[data-lane="0"] { background: rgba(239, 68,  68, 0.30); border-color: rgba(239, 68,  68, 0.55); }
+button.drums-step.utime-display.has-note[data-lane="1"] { background: rgba(249, 115, 22, 0.30); border-color: rgba(249, 115, 22, 0.55); }
+button.drums-step.utime-display.has-note[data-lane="2"] { background: rgba(251, 191, 36, 0.30); border-color: rgba(251, 191, 36, 0.55); }
+button.drums-step.utime-display.has-note[data-lane="3"] { background: rgba(234, 179,  8, 0.30); border-color: rgba(234, 179,  8, 0.55); }
+button.drums-step.utime-display.has-note[data-lane="4"] { background: rgba(132, 204, 22, 0.30); border-color: rgba(132, 204, 22, 0.55); }
+button.drums-step.utime-display.has-note[data-lane="5"] { background: rgba( 20, 184, 166, 0.30); border-color: rgba( 20, 184, 166, 0.55); }
+button.drums-step.utime-display.has-note[data-lane="6"] { background: rgba( 96, 165, 250, 0.30); border-color: rgba( 96, 165, 250, 0.55); }
+button.drums-step.utime-display.has-note[data-lane="7"] { background: rgba(167, 139, 250, 0.30); border-color: rgba(167, 139, 250, 0.55); }
+
+/* Reset cell — sits below the display as its own rounded cell. */
 button.drums-step.utime-reset {
   color: var(--muted);
   background: rgba(255, 255, 255, 0.02);
-  border-top: none;
-  border-radius: 0 0 6px 6px;
 }
 button.drums-step.utime-reset:hover {
   color: var(--text);
   background: rgba(255, 255, 255, 0.05);
 }
+
+/* ── Condition discrete picker ──────────────────────────────────── */
+/*
+ * 8 rows of labelled cells in a single column. The active row (one
+ * whose ratio matches the step's current condition) is tinted with
+ * the lane colour, like the bar-chart "filled" state. Row 4 (the
+ * "—"/always row) gets a subtle teal underline so the centre is
+ * obvious.
+ */
+
+button.drums-step.condition {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+button.drums-step.condition .condition-label {
+  pointer-events: none;
+}
+button.drums-step.condition:hover {
+  color: var(--text);
+}
+
+button.drums-step.condition.condition-centre {
+  color: var(--rule);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+button.drums-step.condition.filled[data-lane="0"] { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68,  68, 0.45); border-color: transparent; color: #0d0a08; }
+button.drums-step.condition.filled[data-lane="1"] { background: #f97316; box-shadow: 0 0 10px rgba(249, 115, 22, 0.45); border-color: transparent; color: #0d0a08; }
+button.drums-step.condition.filled[data-lane="2"] { background: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.45); border-color: transparent; color: #0d0a08; }
+button.drums-step.condition.filled[data-lane="3"] { background: #eab308; box-shadow: 0 0 10px rgba(234, 179,  8, 0.45); border-color: transparent; color: #0d0a08; }
+button.drums-step.condition.filled[data-lane="4"] { background: #84cc16; box-shadow: 0 0 10px rgba(132, 204, 22, 0.45); border-color: transparent; color: #0d0a08; }
+button.drums-step.condition.filled[data-lane="5"] { background: #14b8a6; box-shadow: 0 0 10px rgba( 20, 184, 166, 0.45); border-color: transparent; color: #0d0a08; }
+button.drums-step.condition.filled[data-lane="6"] { background: #60a5fa; box-shadow: 0 0 10px rgba( 96, 165, 250, 0.45); border-color: transparent; color: #0d0a08; }
+button.drums-step.condition.filled[data-lane="7"] { background: #a78bfa; box-shadow: 0 0 10px rgba(167, 139, 250, 0.45); border-color: transparent; color: #0d0a08; }

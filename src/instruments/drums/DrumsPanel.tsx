@@ -16,6 +16,7 @@ import {
   DEFAULT_STEP,
   type EditParam,
   type StepState,
+  type StepCondition,
   type Ratchet
 } from './drums-state';
 import { ensureDrumsEngine } from './drums-host';
@@ -54,7 +55,7 @@ const EDIT_BUTTON_DEFS: ReadonlyArray<{ param: EditParam; emoji: string; label: 
   { param: 'uTime',       emoji: '⏱️', label: 'µTime'       },
   { param: 'probability', emoji: '🎲', label: 'Chance'      },
   { param: 'ratchet',     emoji: '⚡', label: 'Ratchet'     },
-  null,
+  { param: 'condition',   emoji: '🚦', label: 'Condition'   },
   null,
   null
 ];
@@ -98,8 +99,9 @@ function Region({
 
 const TOTAL_ROWS = STEP_ROWS; // 8
 
-/** Bar-chart params — exclude µTime which uses the nudge column. */
-type BarParam = Exclude<EditParam, 'uTime'>;
+/** Bar-chart params — exclude µTime (nudge column) and condition
+ *  (discrete row picker). */
+type BarParam = Exclude<EditParam, 'uTime' | 'condition'>;
 
 /** Linear or log normalisation t∈[0,1] from value ∈ [min, max]. */
 function unipolarT(value: number, min: number, max: number, log: boolean): number {
@@ -208,6 +210,36 @@ function fmtUTime(v: number): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Condition discrete picker
+// ─────────────────────────────────────────────────────────────────────
+//
+// Each of the 8 rows maps to a distinct conditional value. Top half =
+// "every N" (rarer plays), centre = always (no condition), bottom
+// half = "notEvery N" (denser plays). Labels read as play-ratios so
+// users see the density at a glance.
+
+const CONDITION_BY_ROW: readonly StepCondition[] = [
+  { kind: 'every',    n: 8 },
+  { kind: 'every',    n: 4 },
+  { kind: 'every',    n: 3 },
+  { kind: 'every',    n: 2 },
+  { kind: 'none' },
+  { kind: 'notEvery', n: 3 },
+  { kind: 'notEvery', n: 4 },
+  { kind: 'notEvery', n: 8 }
+];
+
+const CONDITION_LABELS: readonly string[] = [
+  '1:8', '1:4', '1:3', '1:2', '—', '2:3', '3:4', '7:8'
+];
+
+function conditionsEqual(a: StepCondition, b: StepCondition): boolean {
+  if (a.kind !== b.kind) return false;
+  if (a.kind === 'none' || b.kind === 'none') return a.kind === b.kind;
+  return a.n === b.n;
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Step cell
 // ─────────────────────────────────────────────────────────────────────
 
@@ -218,6 +250,9 @@ function StepCell({ row, col }: { row: number; col: number }) {
 
   if (inEditMode && editParam === 'uTime') {
     return <UTimeCell row={row} col={col} editLane={editLane!} />;
+  }
+  if (inEditMode && editParam === 'condition') {
+    return <ConditionCell row={row} col={col} editLane={editLane!} />;
   }
   if (inEditMode) {
     return (
@@ -378,6 +413,10 @@ function UTimeCell({
     beat ? 'beat' : '',
     playhead ? 'playhead' : '',
     outOfRange ? 'out-of-range' : '',
+    // Display row tints with the lane colour when this step has a
+    // note — makes "which steps are actually programmed" obvious in
+    // µTime mode without having to flip back to default.
+    kind.kind === 'display' && cell.on ? 'has-note' : '',
     kind.kind === 'nudge' && kind.delta > 0 ? 'utime-up' : '',
     kind.kind === 'nudge' && kind.delta < 0 ? 'utime-down' : ''
   ]
@@ -409,6 +448,72 @@ function UTimeCell({
       }
     >
       <span className="utime-label">{label}</span>
+    </button>
+  );
+}
+
+function ConditionCell({
+  row,
+  col,
+  editLane
+}: {
+  row: number;
+  col: number;
+  editLane: number;
+}) {
+  const cell = useDrumsStore((s) => s.pattern.lanes[editLane]?.steps[col]);
+  const laneLength = useDrumsStore((s) => s.pattern.lanes[editLane]?.length ?? 0);
+  const playhead = useDrumsStore((s) => s.currentStepPerLane[editLane] === col);
+  const patchStep = useDrumsStore((s) => s.patchStep);
+
+  const outOfRange = col >= laneLength;
+  const ourCondition = CONDITION_BY_ROW[row]!;
+  const label = CONDITION_LABELS[row]!;
+  const isCentre = row === 4;
+
+  const handleClick = useCallback(() => {
+    if (outOfRange || !cell) return;
+    if (!cell.on) {
+      patchStep(editLane, col, {
+        ...DEFAULT_STEP,
+        on: true,
+        condition: ourCondition
+      });
+    } else {
+      patchStep(editLane, col, { condition: ourCondition });
+    }
+  }, [outOfRange, cell, patchStep, editLane, col, ourCondition]);
+
+  if (!cell) return <div />;
+
+  // Active row = the one that matches the step's current condition,
+  // but only when the step is actually on (so off steps show no
+  // highlight, matching velocity/length/etc).
+  const active = cell.on && conditionsEqual(cell.condition, ourCondition);
+
+  const beat = col % 4 === 0;
+  const classes = [
+    'drums-step',
+    'edit-mode',
+    'condition',
+    active ? 'filled' : '',
+    isCentre ? 'condition-centre' : '',
+    beat ? 'beat' : '',
+    playhead ? 'playhead' : '',
+    outOfRange ? 'out-of-range' : ''
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <button
+      type="button"
+      className={classes}
+      data-lane={editLane}
+      onClick={handleClick}
+      aria-label={`Step ${col + 1} condition ${label}${active ? ' (active)' : ''}`}
+    >
+      <span className="condition-label">{label}</span>
     </button>
   );
 }

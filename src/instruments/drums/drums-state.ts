@@ -61,16 +61,19 @@ export interface PatternState {
   lanes: LaneState[]; // PATTERN_LANES long
 }
 
-/** Parameters that can be edited via the in-grid editor. Velocity,
- *  length, probability, and ratchet use a bar-chart cell layout;
- *  µTime uses a dedicated nudge-column layout. Mute is gone — set
- *  velocity to 0 to silence a step. Condition isn't editable yet. */
+/** Parameters that can be edited via the in-grid editor.
+ *   bar-chart cells:   velocity, length, probability, ratchet
+ *   nudge column:      uTime
+ *   discrete picker:   condition (rows = distinct conditional values)
+ *
+ *  Mute is gone — set velocity to 0 to silence a step. */
 export type EditParam =
   | 'velocity'
   | 'length'
   | 'uTime'
   | 'probability'
-  | 'ratchet';
+  | 'ratchet'
+  | 'condition';
 
 // ─────────────────────────────────────────────────────────────────────
 // Constants
