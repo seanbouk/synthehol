@@ -14,7 +14,6 @@
  *   uTime      — shifts the hit time by ±stepDur/2
  *   ratchet    — N evenly-spaced sub-hits across the step, with a
  *                slight velocity ramp down so they read as a roll
- *   mute       — skips the hit but advances the step pointer
  *
  * Visual playhead advances on a separate rAF loop that watches
  * ctx.currentTime and pops queued (lane, step) pairs as the audio
@@ -159,7 +158,7 @@ function scheduleCell(
   nominalTime: number,
   stepDur: number
 ): void {
-  if (!cell.on || cell.mute) return;
+  if (!cell.on) return;
   if (!passesCondition(cell.condition, loopCount)) return;
   if (cell.probability < 1 && Math.random() > cell.probability) return;
 

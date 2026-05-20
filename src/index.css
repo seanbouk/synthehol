@@ -781,19 +781,12 @@ button.drums-tempo-btn:hover { color: var(--text); border-color: var(--muted); }
   height: 80px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 20px 0 16px;
+  gap: 10px;
+  padding: 0 12px 0 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  cursor: pointer;
   user-select: none;
-  transition: background 80ms ease;
 }
 .drums-lane-label:last-child { border-bottom: 0; }
-.drums-lane-label:hover { background: rgba(255, 255, 255, 0.025); }
-.drums-lane-label.selected {
-  background: var(--accent-soft);
-  box-shadow: inset 3px 0 0 var(--accent);
-}
 
 .drums-lane-color {
   width: 14px;
@@ -840,9 +833,15 @@ button.drums-tempo-btn:hover { color: var(--text); border-color: var(--muted); }
 /* ── Step grid — 16 × 8 cells, hard-coded to match 80 px sub-cells ── */
 
 .drums-grid {
+  /* The region container; the inner element does the actual grid. */
+}
+
+.drums-grid-inner {
   display: grid;
   grid-template-columns: repeat(16, 80px);
   grid-template-rows: repeat(8, 80px);
+  width: 100%;
+  height: 100%;
 }
 
 button.drums-step {
@@ -894,24 +893,11 @@ button.drums-step:focus-visible {
   outline-offset: -2px;
 }
 
-/* Selected — held step shows a thicker, brighter outline. Overrides
-   playhead because selection is a deliberate user act. */
-.drums-step.selected {
-  outline: 3px solid var(--text);
-  outline-offset: -3px;
-  z-index: 2;
-}
-
 /* Out-of-range — past the lane's length cutoff. Inert and very dim
    so the user sees the lane boundary at a glance. */
 .drums-step.out-of-range {
   opacity: 0.15;
   pointer-events: none;
-}
-
-/* Muted step — same fill as on, but dimmed to flag "won't fire". */
-.drums-step.muted {
-  filter: saturate(0.4);
 }
 
 /* Meta indicator — a small dot in the top-right corner for steps
@@ -1020,108 +1006,179 @@ button.drums-transport.on {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Parameter editor (right panel content) ─────────────────────── */
+/* ── Instrument + Edit button columns ────────────────────────────── */
+/*
+ * Two 40 px columns sandwich col 5 (the column between lane labels
+ * and the step grid). Each holds 8 buttons aligned to the 8 grid
+ * rows. Instrument buttons carry the lane colour; edit buttons carry
+ * the parameter emoji.
+ *
+ * Edit-button "armed" = the active edit param. Instrument-button
+ * "armed" = the active edit lane. When an edit param is armed but
+ * no lane is yet chosen, the instrument buttons pulse (`.flashing`)
+ * to prompt selection.
+ */
 
-.drums-editor {
+.drums-inst-col,
+.drums-edit-col {
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 100%;
-  padding: 20px 18px;
-  gap: 14px;
-  overflow: hidden;
 }
 
-.drums-editor.empty {
-  align-items: center;
-  justify-content: flex-start;
-  gap: 16px;
-}
-
-.drums-editor-header {
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text);
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 8px;
-  margin-bottom: 2px;
-}
-
-.drums-editor-hint {
-  font-size: 12px;
-  color: var(--muted);
-  font-style: italic;
-  margin-top: auto;
-}
-
-/* The condition picker stacks two button-group rows. */
-.drums-cond-picker {
+button.drums-inst-btn,
+button.drums-edit-btn {
+  width: 32px;
+  height: 72px;
+  padding: 0;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* ── HSlider (horizontal slider for compact param editors) ──────── */
-
-.hslider {
-  display: grid;
-  grid-template-columns: 70px 1fr 60px;
   align-items: center;
-  gap: 10px;
-  height: 28px;
-}
-
-.hslider-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-}
-
-.hslider-track {
-  position: relative;
-  background: linear-gradient(
-    to bottom,
-    #0d0a08 0%,
-    #1f1b18 50%,
-    #0d0a08 100%
-  );
+  justify-content: center;
   border: 1px solid var(--border);
-  border-radius: 4px;
-  cursor: ew-resize;
+  border-radius: 6px;
+  margin: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
   user-select: none;
+  transition: background 80ms ease, border-color 80ms ease, color 80ms ease;
 }
-
-.hslider-fill {
-  position: absolute;
-  top: 1px;
-  bottom: 1px;
-  background: var(--accent);
-  opacity: 0.4;
-  border-radius: 2px;
-  pointer-events: none;
-}
-
-.hslider-cap {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--text);
-  border-radius: 3px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-  pointer-events: none;
-}
-
-.hslider-value {
-  font-size: 11px;
+button.drums-inst-btn:hover,
+button.drums-edit-btn:hover {
   color: var(--text);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
+  border-color: var(--muted);
 }
 
-.hslider.disabled .hslider-track { cursor: not-allowed; }
-.hslider.disabled .hslider-fill { background: var(--disabled-strong); opacity: 0.3; }
-.hslider.disabled .hslider-cap { background: var(--disabled-soft); box-shadow: none; }
-.hslider.disabled .hslider-label,
-.hslider.disabled .hslider-value { color: var(--disabled-soft); }
+/* Instrument button — colour tints the background; armed = full
+   colour, flashing = pulse. */
+button.drums-inst-btn {
+  background: color-mix(in srgb, var(--lane-color, var(--border)) 18%, transparent);
+  border-color: color-mix(in srgb, var(--lane-color, var(--border)) 40%, transparent);
+  color: var(--text);
+  font-weight: 600;
+}
+button.drums-inst-btn.armed {
+  background: var(--lane-color, var(--accent));
+  border-color: var(--lane-color, var(--accent));
+  color: #0d0a08;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--lane-color, var(--accent)) 55%, transparent);
+}
+button.drums-inst-btn.flashing {
+  animation: drums-flash 0.85s ease-in-out infinite;
+}
+
+/* Edit button — emoji + armed state uses the accent. */
+.drums-edit-emoji {
+  font-size: 20px;
+  line-height: 1;
+  filter: grayscale(0.15);
+}
+button.drums-edit-btn.armed {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0d0a08;
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.55);
+}
+button.drums-edit-btn.armed .drums-edit-emoji {
+  filter: none;
+}
+
+/* Empty slots — visible cell with no button, kept so the column
+   reads at the right height. */
+.drums-inst-btn.empty,
+.drums-edit-btn.empty {
+  width: 32px;
+  height: 72px;
+  margin: 4px;
+  border: 1px dashed rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+}
+
+@keyframes drums-flash {
+  0%, 100% {
+    background: color-mix(in srgb, var(--lane-color, var(--border)) 18%, transparent);
+    box-shadow: none;
+  }
+  50% {
+    background: var(--lane-color, var(--accent));
+    box-shadow: 0 0 14px color-mix(in srgb, var(--lane-color, var(--accent)) 60%, transparent);
+  }
+}
+
+/* ── Bar-chart edit mode on the step grid ────────────────────────── */
+/*
+ * When .drums-grid has .edit-mode, every cell renders as a bar-chart
+ * cell instead of a per-lane step. The .drums-grid-inner container
+ * gets a [data-edit-lane="N"] attribute so a single rule per lane
+ * tints its cells from the lane palette.
+ */
+
+button.drums-step.edit-mode {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.04);
+  box-shadow: none;
+}
+button.drums-step.edit-mode:hover {
+  border-color: var(--muted);
+}
+
+/* Filled bar segment — tinted by the active lane's colour. */
+button.drums-step.edit-mode.filled[data-lane="0"] { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68,  68, 0.45); border-color: transparent; }
+button.drums-step.edit-mode.filled[data-lane="1"] { background: #f97316; box-shadow: 0 0 10px rgba(249, 115, 22, 0.45); border-color: transparent; }
+button.drums-step.edit-mode.filled[data-lane="2"] { background: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.45); border-color: transparent; }
+button.drums-step.edit-mode.filled[data-lane="3"] { background: #eab308; box-shadow: 0 0 10px rgba(234, 179,  8, 0.45); border-color: transparent; }
+button.drums-step.edit-mode.filled[data-lane="4"] { background: #84cc16; box-shadow: 0 0 10px rgba(132, 204, 22, 0.45); border-color: transparent; }
+button.drums-step.edit-mode.filled[data-lane="5"] { background: #14b8a6; box-shadow: 0 0 10px rgba( 20, 184, 166, 0.45); border-color: transparent; }
+button.drums-step.edit-mode.filled[data-lane="6"] { background: #60a5fa; box-shadow: 0 0 10px rgba( 96, 165, 250, 0.45); border-color: transparent; }
+button.drums-step.edit-mode.filled[data-lane="7"] { background: #a78bfa; box-shadow: 0 0 10px rgba(167, 139, 250, 0.45); border-color: transparent; }
+
+/* ── µTime nudge column ─────────────────────────────────────────── */
+/*
+ * Each of the 16 step columns becomes a stack of nudge buttons +
+ * one value display + one reset. Cells share the same 80×80 slot
+ * as bar-chart cells but render text labels instead of solid fills.
+ */
+
+button.drums-step.utime {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+button.drums-step.utime .utime-label {
+  pointer-events: none;
+}
+
+/* Nudge cells — up nudges tint slightly green-ish, down tint amber-ish
+   for the obvious direction cue. */
+button.drums-step.utime-up    { color: #d4fc92; }
+button.drums-step.utime-down  { color: #f6c08c; }
+
+button.drums-step.utime-up:hover    { background: rgba(212, 252, 146, 0.08); border-color: rgba(212, 252, 146, 0.3); }
+button.drums-step.utime-down:hover  { background: rgba(246, 192, 140, 0.08); border-color: rgba(246, 192, 140, 0.3); }
+
+/* Display cell — bigger, brighter, current-value readout. */
+button.drums-step.utime-display {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+}
+
+/* Reset cell — sits directly under display, visually joined to it. */
+button.drums-step.utime-reset {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.02);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+}
+button.drums-step.utime-reset:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
